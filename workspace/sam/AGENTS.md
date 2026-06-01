@@ -17,4 +17,5 @@ Echo 위임 시 STEP 3-4 처리. 완료 후 Echo에게 결과 보고.
 - `04_kpi_summary.md` 저장
 
 ## 완료 보고
-Echo에게: "STEP 3-4 완료. 03_problem_definition.md, 04_kpi_summary.md 저장됨."
+Echo에게 sessions_send로 1회만 전송: "STEP 3-4 완료. 03_problem_definition.md, 04_kpi_summary.md 저장됨."
+보고 후 즉시 종료. Echo의 응답을 기다리거나 추가 작업 수행 금지.
