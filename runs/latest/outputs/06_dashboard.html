@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Performance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', -apple-system, sans-serif; background: #F2F4F7; color: #1B2D3D; }
+  .header { background: #1B2D3D; color: white; padding: 24px 32px; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header .meta { font-size: 12px; opacity: 0.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #D6DCE4; }
+  .kpi-label { font-size: 11px; color: #727173; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; }
+  .kpi-value { font-size: 28px; font-weight: 900; color: #1B2D3D; }
+  .kpi-sub { font-size: 12px; color: #54595C; margin-top: 4px; }
+  .kpi-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .badge-green { background: #D1FAE5; color: #065F46; }
+  .badge-blue { background: #DBEAFE; color: #1E40AF; }
+  .badge-amber { background: #FEF3C7; color: #92400E; }
+  .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #D6DCE4; }
+  .chart-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; color: #1B2D3D; }
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .ab-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #D6DCE4; }
+  .ab-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #F2F4F7; }
+  .ab-group { font-size: 13px; font-weight: 700; }
+  .ab-val { font-size: 13px; color: #54595C; }
+  .insight-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #D6DCE4; }
+  .insight-item { display: flex; gap: 10px; margin-bottom: 12px; }
+  .insight-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+  .icon-p0 { background: #FEE2E2; color: #DC2626; }
+  .icon-p1 { background: #FEF3C7; color: #D97706; }
+  .insight-text { font-size: 12px; color: #54595C; line-height: 1.5; }
+  .insight-bold { font-weight: 700; color: #1B2D3D; }
+  canvas { max-height: 220px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>📊 Sales Performance Dashboard</h1>
+    <div class="meta">sample_sales.csv · 분석 기간: 2026-01 ~ 2026-06 · Echo Pipeline v1</div>
+  </div>
+  <div style="text-align:right; font-size:12px; opacity:0.7;">
+    A/B 테스트 포함<br>4개 지역 · 6개 채널
+  </div>
+</div>
+
+<div class="container">
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">총 매출</div>
+      <div class="kpi-value">$397K</div>
+      <div class="kpi-sub"><span class="kpi-badge badge-green">목표: +15%</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">총 이익</div>
+      <div class="kpi-value">$121K</div>
+      <div class="kpi-sub">이익률 29.4%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">총 주문</div>
+      <div class="kpi-value">3,283</div>
+      <div class="kpi-sub">전환율 12.41%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">평균 ROAS</div>
+      <div class="kpi-value">1.45</div>
+      <div class="kpi-sub"><span class="kpi-badge badge-blue">목표: 1.59</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">A/B 우위</div>
+      <div class="kpi-value">B안</div>
+      <div class="kpi-sub"><span class="kpi-badge badge-green">+5.8% 매출</span></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">월별 매출 & 이익 추이</div>
+      <canvas id="monthlyChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">지역별 매출 비중</div>
+      <canvas id="regionChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Bottom -->
+  <div class="bottom-grid">
+    <div class="ab-card">
+      <div class="chart-title">A/B 테스트 결과</div>
+      <div class="ab-row"><span class="ab-group">그룹</span><span class="ab-val" style="color:#727173">매출</span><span class="ab-val" style="color:#727173">전환율</span><span class="ab-val" style="color:#727173">ROAS</span></div>
+      <div class="ab-row"><span class="ab-group" style="color:#1B2D3D">A그룹</span><span class="ab-val">$193K</span><span class="ab-val">11.89%</span><span class="ab-val">1.43</span></div>
+      <div class="ab-row"><span class="ab-group" style="color:#059669">B그룹</span><span class="ab-val">$204K</span><span class="ab-val">12.93%</span><span class="ab-val">1.47</span></div>
+
+      <div style="margin-top:12px; padding:10px; background:#D1FAE5; border-radius:8px; font-size:12px; color:#065F46; font-weight:600;">
+        ✅ B안 전면 도입 권장 (p&lt;0.05 유의)
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">채널별 ROAS</div>
+      <canvas id="roasChart"></canvas>
+    </div>
+    <div class="insight-card">
+      <div class="chart-title">📌 핵심 액션 플랜</div>
+      <div class="insight-item">
+        <div class="insight-icon icon-p0">P0</div>
+        <div class="insight-text"><span class="insight-bold">즉시: B안 전면 도입</span><br>전환율 +5~8% 예상</div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon icon-p1">P1</div>
+        <div class="insight-text"><span class="insight-bold">2주: 저ROAS 채널 예산 재배분</span><br>Paid Social → Organic 이전</div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon icon-p1">P1</div>
+        <div class="insight-text"><span class="insight-bold">1개월: 고기회 지역 집중</span><br>North America Technology 카테고리</div>
+      </div>
+      <div class="insight-item">
+        <div class="insight-icon" style="background:#E0E7FF;color:#3730A3;">P2</div>
+        <div class="insight-text"><span class="insight-bold">1개월: 할인 전략 재설계</span><br>이익률 +3%p 목표</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const monthLabels = ["2026-01", "2026-02", "2026-03"];
+const monthRev = [119030, 164360, 113740];
+const monthProfit = [37220, 48140, 36100];
+const regionLabels = ["North America", "Asia Pacific", "Europe", "Latin America"];
+const regionRevs = [170320, 103400, 77050, 46360];
+const chLabels = ["Organic", "Affiliate", "Reseller", "Direct", "Email", "Paid Search", "Paid Social"];
+const chRoas = [1.58, 1.55, 1.5, 1.48, 1.37, 1.34, 1.12];
+
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: monthLabels,
+    datasets: [
+      { label: '매출', data: monthRev, backgroundColor: '#ACC3DC', borderRadius: 6 },
+      { label: '이익', data: monthProfit, backgroundColor: '#1B2D3D', borderRadius: 6 }
+    ]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
+});
+
+new Chart(document.getElementById('regionChart'), {
+  type: 'doughnut',
+  data: {
+    labels: regionLabels,
+    datasets: [{ data: regionRevs, backgroundColor: ['#1B2D3D','#ACC3DC','#93ACC7','#CBDFF1'], borderWidth: 0 }]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+});
+
+new Chart(document.getElementById('roasChart'), {
+  type: 'bar',
+  data: {
+    labels: chLabels,
+    datasets: [{ label: 'ROAS', data: chRoas, backgroundColor: chRoas.map(v => v >= 1.45 ? '#059669' : '#DC2626'), borderRadius: 6 }]
+  },
+  options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+});
+</script>
+</body>
+</html>

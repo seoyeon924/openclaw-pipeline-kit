@@ -1,0 +1,66 @@
+{
+  "run_id": "20260601-112518",
+  "started_at": "2026-06-01T11:25:18+00:00",
+  "finished_at": "2026-06-01T11:29:05+00:00",
+  "overall_status": "completed",
+  "current_stage": "done",
+  "progress": {
+    "completed": 7,
+    "total": 7
+  },
+  "stages": [
+    {
+      "id": "data-ingestion",
+      "name": "@data-ingestion",
+      "status": "completed",
+      "summary": "\ub370\uc774\ud130 \ud504\ub85c\ud30c\uc77c \uc644\ub8cc (400\ud589, A/B \ud14c\uc2a4\ud2b8 \ud3ec\ud568)",
+      "started_at": "2026-06-01T11:25:23+00:00",
+      "completed_at": "2026-06-01T11:26:27+00:00"
+    },
+    {
+      "id": "eda",
+      "name": "@eda",
+      "status": "completed",
+      "summary": "EDA \ub9ac\ud3ec\ud2b8 \uc0dd\uc131 \uc644\ub8cc (\uc6d4\ubcc4/\uc9c0\uc5ed/\ucc44\ub110/A\u00b7B \ubd84\uc11d)",
+      "completed_at": "2026-06-01T11:26:27+00:00"
+    },
+    {
+      "id": "problem",
+      "name": "@problem",
+      "status": "completed",
+      "summary": "4\uac1c \ube44\uc988\ub2c8\uc2a4 \ubb38\uc81c \uc815\uc758 \uc644\ub8cc",
+      "started_at": "2026-06-01T11:26:27+00:00",
+      "completed_at": "2026-06-01T11:27:05+00:00"
+    },
+    {
+      "id": "metrics",
+      "name": "@metrics",
+      "status": "completed",
+      "summary": "5\uac1c KPI \ubca0\uc774\uc2a4\ub77c\uc778 + \ubaa9\ud45c \uc124\uacc4",
+      "completed_at": "2026-06-01T11:27:05+00:00"
+    },
+    {
+      "id": "analysis",
+      "name": "@analysis",
+      "status": "completed",
+      "summary": "\uc778\uc0ac\uc774\ud2b8 3\uac1c \ub3c4\ucd9c \uc644\ub8cc (A/B\uac80\uc99d, \ucc44\ub110\uc7ac\ubc30\ubd84, \uc9c0\uc5ed\u00d7\uce74\ud14c\uace0\ub9ac)",
+      "started_at": "2026-06-01T11:27:05+00:00",
+      "completed_at": "2026-06-01T11:27:39+00:00"
+    },
+    {
+      "id": "dashboard",
+      "name": "@dashboard",
+      "status": "completed",
+      "summary": "\uc778\ud130\ub799\ud2f0\ube0c \ub300\uc2dc\ubcf4\ub4dc \uc0dd\uc131 \uc644\ub8cc",
+      "started_at": "2026-06-01T11:27:39+00:00",
+      "completed_at": "2026-06-01T11:29:05+00:00"
+    },
+    {
+      "id": "report",
+      "name": "@report",
+      "status": "completed",
+      "summary": "\uc784\uc6d0 \ubcf4\uace0\uc11c \uc791\uc131 \uc644\ub8cc",
+      "completed_at": "2026-06-01T11:29:05+00:00"
+    }
+  ]
+}

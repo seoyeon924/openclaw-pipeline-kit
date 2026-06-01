@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Data Analyst OS — Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --accent: #4fb799;
+      --accent-dim: rgba(79,183,153,0.14);
+      --accent-border: rgba(79,183,153,0.28);
+      --text-dark: #1a1714;
+      --text-mid: #5a534d;
+      --text-muted: #9a9086;
+      --border: rgba(96,79,67,0.13);
+      --card-bg: rgba(255,252,248,0.99);
+      --card-primary-bg: linear-gradient(160deg,rgba(225,241,236,0.85) 0%,rgba(255,252,248,0.99) 65%);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 3px 10px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.09), 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { height:100%; overflow:hidden; }
+
+    body {
+      font-family:'Inter',-apple-system,sans-serif;
+      background:#0a0a0a;
+      color:var(--text-dark);
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      display:flex;
+      align-items:center;
+      height:44px;
+      padding:0 16px;
+      background:#0a0a0a;
+      flex-shrink:0;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      gap:0;
+    }
+    .topbar-brand {
+      font-size:12px;
+      font-weight:700;
+      color:rgba(255,255,255,0.9);
+      letter-spacing:0.02em;
+      margin-right:18px;
+      white-space:nowrap;
+      font-family:'Barlow',sans-serif;
+    }
+    .topbar-steps { display:flex; align-items:center; gap:2px; flex:1; }
+    .topbar-step {
+      font-size:11px;
+      font-weight:500;
+      color:rgba(255,255,255,0.38);
+      text-decoration:none;
+      padding:3px 9px;
+      border-radius:5px;
+      white-space:nowrap;
+      transition:color 0.12s,background 0.12s;
+    }
+    .topbar-step:hover { color:rgba(255,255,255,0.78); background:rgba(255,255,255,0.06); }
+    .topbar-step.active { color:var(--accent); font-weight:700; }
+    .topbar-arrow { font-size:9px; color:rgba(255,255,255,0.16); padding:0 2px; }
+    .topbar-right { display:flex; align-items:center; gap:10px; margin-left:auto; }
+    .topbar-status {
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-size:10px;
+      color:rgba(255,255,255,0.45);
+      font-weight:500;
+      max-width:200px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .status-dot {
+      width:6px; height:6px;
+      border-radius:50%;
+      background:var(--accent);
+      flex-shrink:0;
+    }
+    .status-dot.processing { animation:pulse 1.4s infinite; }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.45; transform:scale(0.78); }
+    }
+    .topbar-link {
+      font-size:11px;
+      font-weight:600;
+      color:var(--accent);
+      text-decoration:none;
+      padding:4px 10px;
+      border:1px solid rgba(79,183,153,0.32);
+      border-radius:6px;
+      white-space:nowrap;
+      transition:background 0.12s;
+    }
+    .topbar-link:hover { background:rgba(79,183,153,0.1); }
+
+    /* ── PIPELINE STRIP ── */
+    .pipeline-strip {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      height:52px;
+      padding:0 16px;
+      background:#f5f0e8;
+      border-bottom:1px solid rgba(96,79,67,0.16);
+      flex-shrink:0;
+      overflow-x:auto;
+    }
+    .pipeline-stat {
+      display:flex;
+      align-items:baseline;
+      gap:5px;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    .pipeline-stat-num {
+      font-family:'Barlow',sans-serif;
+      font-size:19px;
+      font-weight:600;
+      color:var(--text-dark);
+      line-height:1;
+    }
+    .pipeline-stat-num span { color:var(--accent); }
+    .pipeline-stat-label {
+      font-size:10px;
+      color:var(--text-muted);
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:0.07em;
+    }
+    .pipeline-divider {
+      width:1px; height:18px;
+      background:rgba(96,79,67,0.18);
+      flex-shrink:0;
+      margin:0 2px;
+    }
+    .pipeline-stages { display:flex; gap:4px; align-items:center; }
+    .stage-pill {
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      padding:4px 9px;
+      border-radius:999px;
+      border:1px solid rgba(96,79,67,0.12);
+      font-size:10px;
+      font-weight:600;
+      white-space:nowrap;
+      background:rgba(255,255,255,0.65);
+      color:var(--text-mid);
+      transition:all 0.15s;
+      cursor:default;
+    }
+    .stage-pill.completed {
+      background:rgba(79,183,153,0.12);
+      border-color:rgba(79,183,153,0.28);
+      color:#145c47;
+    }
+    .stage-pill.processing,.stage-pill.running {
+      background:rgba(239,176,93,0.15);
+      border-color:rgba(239,176,93,0.38);
+      color:#7a4c00;
+    }
+    .stage-pill.pending {
+      background:transparent;
+      color:var(--text-muted);
+      border-color:rgba(96,79,67,0.09);
+    }
+    .stage-pill-icon { font-size:11px; width:14px; text-align:center; }
+    .stage-pill-check { font-size:9px; opacity:0.8; }
+    .pipeline-meta {
+      font-size:10px;
+      color:var(--text-muted);
+      white-space:nowrap;
+      margin-left:auto;
+      flex-shrink:0;
+    }
+
+    /* ── OUTPUT AREA ── */
+    .output-area {
+      flex:1;
+      min-height:0;
+      background:#ece8e2;
+      overflow-y:auto;
+      display:flex;
+      flex-direction:column;
+    }
+
+    #outputsList {
+      padding:8px;
+    }
+
+    /* ── ANCHOR BAR ── */
+    .output-anchor-bar {
+      display:flex;
+      align-items:center;
+      gap:4px;
+      padding:7px 12px;
+      background:#e8e3db;
+      border-bottom:1px solid rgba(96,79,67,0.12);
+      flex-shrink:0;
+      flex-wrap:wrap;
+    }
+    .anchor-group { display:flex; align-items:center; gap:3px; flex-wrap:wrap; }
+    .anchor-group-sep {
+      width:1px; height:14px;
+      background:rgba(96,79,67,0.18);
+      flex-shrink:0;
+      align-self:center;
+      margin:0 3px;
+    }
+    .anchor-chip {
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:10px;
+      font-weight:700;
+      cursor:pointer;
+      text-decoration:none;
+      transition:all 0.12s;
+      white-space:nowrap;
+      user-select:none;
+      border:1px solid transparent;
+    }
+    .anchor-chip.tier-primary {
+      background:rgba(79,183,153,0.14);
+      border-color:rgba(79,183,153,0.26);
+      color:#145c47;
+    }
+    .anchor-chip.tier-primary:hover { background:rgba(79,183,153,0.24); }
+    .anchor-chip.tier-secondary {
+      background:rgba(96,79,67,0.07);
+      border-color:rgba(96,79,67,0.14);
+      color:var(--text-mid);
+    }
+    .anchor-chip.tier-secondary:hover { background:rgba(96,79,67,0.12); }
+    .anchor-chip.tier-support {
+      background:transparent;
+      border-color:rgba(96,79,67,0.1);
+      color:var(--text-muted);
+    }
+    .anchor-chip.tier-support:hover { background:rgba(96,79,67,0.07); }
+
+    /* ── OUTPUT GRID ── */
+    .outputs-gallery {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      align-content:start;
+    }
+
+    /* ── OUTPUT CARD ── */
+    .output-item {
+      background:var(--card-bg);
+      border:1px solid rgba(96,79,67,0.1);
+      border-radius:12px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      box-shadow:var(--shadow-sm);
+      min-height:0;
+      transition:transform 0.14s,box-shadow 0.14s,border-color 0.14s;
+    }
+    .output-item:hover {
+      transform:translateY(-2px);
+      box-shadow:var(--shadow-md);
+      border-color:rgba(79,183,153,0.22);
+    }
+    .output-tier-primary {
+      grid-column:span 1;
+      background:var(--card-primary-bg);
+      border-color:rgba(79,183,153,0.2);
+    }
+    .output-tier-support {
+      opacity:0.86;
+    }
+    .output-tier-support:hover { opacity:1; }
+
+    .output-header {
+      display:flex;
+      align-items:center;
+      gap:9px;
+      padding:9px 11px;
+      flex-shrink:0;
+    }
+    .output-icon {
+      width:28px; height:28px;
+      border-radius:7px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:12px;
+      font-weight:700;
+      flex-shrink:0;
+    }
+    .output-icon.eda { background:#E8E0F5; color:#7C5CBF; }
+    .output-icon.metrics { background:#FEF3C7; color:#D97706; }
+    .output-icon.dashboard { background:#DBEAFE; color:#3B82F6; }
+    .output-icon.report { background:#CCFBF1; color:#0D9488; }
+    .output-icon.questions { background:#FCE7F3; color:#DB2777; }
+
+    .output-name-block { flex:1; min-width:0; }
+    .output-name {
+      font-size:12px;
+      font-weight:700;
+      color:var(--text-dark);
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .output-tier-primary .output-name { font-size:12px; color:#0c3d2d; }
+    .output-meta {
+      font-size:10px;
+      color:var(--text-muted);
+      margin-top:1px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .output-tier-badge {
+      display:inline-flex;
+      align-items:center;
+      padding:1px 5px;
+      border-radius:999px;
+      font-size:9px;
+      font-weight:700;
+      letter-spacing:0.03em;
+      text-transform:uppercase;
+      flex-shrink:0;
+    }
+    .output-tier-badge.core {
+      background:rgba(79,183,153,0.15);
+      color:#145c47;
+    }
+    .output-tier-badge.support {
+      background:rgba(96,79,67,0.07);
+      color:var(--text-muted);
+    }
+
+    .output-preview {
+      border-top:1px solid rgba(96,79,67,0.08);
+    }
+    .output-item.output-eda .output-preview { background:linear-gradient(180deg,rgba(237,231,245,0.6) 0%,#fff 50%); }
+    .output-item.output-metrics .output-preview { background:linear-gradient(180deg,rgba(254,243,199,0.6) 0%,#fff 50%); }
+    .output-item.output-dashboard .output-preview { background:linear-gradient(180deg,rgba(219,234,254,0.6) 0%,#fff 50%); }
+    .output-item.output-report .output-preview { background:linear-gradient(180deg,rgba(204,251,241,0.6) 0%,#fff 50%); }
+    .output-item.output-questions .output-preview { background:linear-gradient(180deg,rgba(252,231,243,0.6) 0%,#fff 50%); }
+
+    /* ── CARD CONTENT COMPONENTS ── */
+    /* ── 카드 내부 콘텐츠 ── */
+    .report-card { padding:9px 11px; }
+    .report-metrics {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(56px,1fr));
+      gap:5px; margin-bottom:8px;
+    }
+    .metric-card {
+      padding:6px 8px;
+      background:rgba(96,79,67,0.04);
+      border-radius:7px;
+      border:1px solid rgba(96,79,67,0.07);
+    }
+    .metric-value { font-size:15px; font-weight:700; color:var(--text-dark); line-height:1; font-family:'Barlow',sans-serif; }
+    .metric-label { font-size:9px; color:var(--text-muted); margin-top:3px; line-height:1.3; }
+
+    /* 분석 포인트 — 핵심 체크리스트 */
+    .analysis-points {
+      padding:7px 11px;
+      border-top:1px solid rgba(96,79,67,0.07);
+    }
+    .analysis-points-label {
+      font-size:9px;
+      font-weight:700;
+      color:var(--text-muted);
+      text-transform:uppercase;
+      letter-spacing:0.07em;
+      margin-bottom:5px;
+    }
+    .analysis-point-item {
+      display:flex;
+      gap:6px;
+      align-items:flex-start;
+      margin-bottom:4px;
+    }
+    .ap-num {
+      font-size:9px;
+      font-weight:800;
+      color:var(--accent);
+      background:rgba(79,183,153,0.12);
+      border-radius:4px;
+      padding:1px 4px;
+      flex-shrink:0;
+      line-height:1.5;
+    }
+    .ap-text {
+      font-size:10px;
+      color:var(--text-mid);
+      line-height:1.5;
+    }
+
+    /* 섹션 프리뷰 */
+    .section-preview { padding:9px 11px; }
+    .section-list { display:flex; flex-direction:column; gap:3px; margin-bottom:6px; }
+    .section-item {
+      display:flex;
+      gap:6px;
+      font-size:10px;
+      line-height:1.45;
+      padding:3px 0;
+      border-bottom:1px solid rgba(96,79,67,0.05);
+    }
+    .section-item:last-child { border-bottom:none; }
+    .section-heading {
+      font-weight:700;
+      color:var(--text-dark);
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+    .section-body { color:var(--text-mid); }
+
+    /* 질문 리스트 */
+    .questions-list { padding:9px 11px; }
+    .question-item {
+      display:flex;
+      gap:6px;
+      align-items:flex-start;
+      margin-bottom:5px;
+    }
+    .question-number {
+      font-size:9px; font-weight:700; color:#db2777;
+      background:rgba(219,39,119,0.09);
+      padding:1px 5px; border-radius:4px; flex-shrink:0;
+      line-height:1.5;
+    }
+    .question-text { font-size:10px; color:var(--text-mid); line-height:1.5; }
+
+    /* 액션 플랜 */
+    .action-plan-preview { padding:9px 11px; }
+    .action-cards { display:flex; flex-direction:column; gap:5px; }
+    .action-card {
+      background:rgba(96,79,67,0.04);
+      border-radius:7px; padding:6px 9px;
+      border:1px solid rgba(96,79,67,0.08);
+    }
+    .action-card-header { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+    .action-priority {
+      font-size:9px; font-weight:700;
+      background:rgba(79,183,153,0.15); color:#145c47;
+      padding:1px 6px; border-radius:4px; flex-shrink:0;
+    }
+    .action-owner { font-size:9px; color:var(--text-muted); }
+    .action-title { font-size:11px; font-weight:600; color:var(--text-dark); margin-bottom:2px; }
+    .action-meta { font-size:9px; color:var(--text-muted); }
+
+    .preview-image { padding:7px; }
+    .preview-image img { width:100%; border-radius:6px; display:block; }
+    .preview-caption { font-size:9px; color:var(--text-muted); margin-top:3px; }
+
+    .report-charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(80px,1fr)); gap:5px; margin-top:6px; }
+    .report-chart-card { border-radius:6px; overflow:hidden; }
+    .report-chart-card img { width:100%; display:block; }
+    .report-chart-title { font-size:9px; font-weight:600; color:var(--text-dark); margin-top:2px; }
+    .report-chart-caption { font-size:9px; color:var(--text-muted); }
+
+    .empty-state {
+      padding:14px; font-size:11px; color:var(--text-muted); text-align:center;
+    }
+
+    /* knowledge card (hidden div, JS target) */
+    #knowledgeBase { display:none; }
+
+    /* hidden translation targets */
+    #headerTitleSub,#progressTitle,#inputPanelTitle,#outputsPanelTitle { display:none; }
+
+    /* lang buttons hidden */
+    .lang-toggle,.lang-button { display:none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width:960px) {
+      .outputs-gallery { grid-template-columns:repeat(2,1fr); }
+      .pipeline-meta { display:none; }
+    }
+    @media (max-width:600px) {
+      .outputs-gallery { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-brand">▥ 파이프라인 모니터</span>
+  <div class="topbar-steps">
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-status">
+      <div class="status-dot processing" id="statusDot"></div>
+      <span id="statusText">불러오는 중</span>
+    </div>
+    <a class="topbar-link" href="./analysis-dashboard.html" id="analysisLink">← 분석으로 돌아가기</a>
+  </div>
+</div>
+
+<!-- PIPELINE STRIP -->
+<div class="pipeline-strip">
+  <div class="pipeline-stat">
+    <div class="pipeline-stat-num"><span id="progressSummaryCount">0</span> / 7</div>
+    <div class="pipeline-stat-label" id="progressSummarySuffix">완료</div>
+  </div>
+  <div class="pipeline-divider"></div>
+  <div class="pipeline-stages" id="topProgressStages"></div>
+  <div class="pipeline-meta" id="progressSummaryMeta"></div>
+</div>
+
+<!-- OUTPUT AREA -->
+<div class="output-area">
+  <div class="output-anchor-bar" id="outputAnchorBar" style="display:none"></div>
+  <div id="outputsList"></div>
+</div>
+
+<!-- hidden JS targets -->
+<span id="headerTitleSub" style="display:none"></span>
+<span id="progressTitle" style="display:none"></span>
+<span id="inputPanelTitle" style="display:none"></span>
+<span id="outputsPanelTitle" style="display:none"></span>
+<span id="outputCount" style="display:none"></span>
+<span id="inputCount" style="display:none"></span>
+<span id="progressFill" style="display:none"></span>
+<div id="knowledgeBase" style="display:none"></div>
+
+<script>
+const statusUrl = './runs/latest/status.json';
+const outputsUrl = './runs/latest/outputs/index.json';
+const knowledgeBaseUrl = './runs/latest/outputs/knowledge_base.json';
+const inboxFinderUrl = './runs/latest/input';
+const localeKey = 'agentMapLocale';
+
+const state = {
+  status: null,
+  outputs: [],
+  knowledgeBase: null,
+  locale: 'ko',
+};
+
+const translations = {
+  en: {
+    headerTitleSub: 'Activity Monitor',
+    analysisLink: '← 분석으로 돌아가기',
+    progressTitle: 'Pipeline Progress',
+    progressSummarySuffix: 'stages completed',
+    progressWaiting: 'Waiting for latest stage timeline.',
+    inputPanelTitle: 'Input Data',
+    outputsPanelTitle: 'Outputs',
+    uploadStrong: 'Put files in `agent-map/data/inbox/`',
+    uploadBody: 'Then run `python3 agent-map/pipeline/run_da_flow.py`',
+    uploadLinkLabel: 'Open folder in Finder',
+    loadingRun: 'Loading latest run',
+    noLatestRun: 'No latest run found',
+    noMetadata: 'No run metadata available.',
+    runPipelineOnce: 'Run the pipeline once to populate input metadata.',
+    noInputs: 'No input files detected in the latest run.',
+    file: 'file',
+    files: 'files',
+    row: 'rows',
+    column: 'columns',
+    openInFinder: 'Open in Finder',
+    ready: 'ready',
+    outputsEmpty: 'Pipeline outputs will appear here after a successful run.',
+    noPreview: 'No preview available for',
+    keyInsights: 'Key Insights',
+    practicalReadout: 'Operator Readout',
+    latestRun: 'Latest run',
+    currentStage: 'Current stage',
+    updated: 'updated',
+    completed: 'completed',
+    noStageData: 'No stage data available yet.',
+    noRunMeta: 'Waiting for run metadata.',
+    noOutputMeta: 'No latest run found'
+  },
+  ko: {
+    headerTitleSub: '활동 모니터 & 산출물 허브',
+    analysisLink: '← 분석으로 돌아가기',
+    progressTitle: '파이프라인 진행 상황',
+    progressSummarySuffix: '단계 완료',
+    progressWaiting: '최신 단계 타임라인을 기다리는 중입니다.',
+    inputPanelTitle: '입력 데이터',
+    outputsPanelTitle: '산출물',
+    uploadStrong: '`agent-map/data/inbox/`에 파일 넣기',
+    uploadBody: '`python3 agent-map/pipeline/run_da_flow.py` 실행',
+    uploadLinkLabel: 'Finder에서 폴더 열기',
+    loadingRun: '최신 실행 불러오는 중',
+    noLatestRun: '최신 실행 결과가 없습니다',
+    noMetadata: '실행 메타데이터가 없습니다.',
+    runPipelineOnce: '입력 메타데이터를 채우려면 파이프라인을 한 번 실행하세요.',
+    noInputs: '최신 실행에서 감지된 입력 파일이 없습니다.',
+    file: '개 파일',
+    files: '개 파일',
+    row: '행',
+    column: '열',
+    openInFinder: 'Finder에서 열기',
+    ready: '준비됨',
+    outputsEmpty: '파이프라인 성공 실행 후 산출물이 여기에 표시됩니다.',
+    noPreview: '미리보기를 제공하지 않습니다:',
+    keyInsights: '핵심 인사이트',
+    practicalReadout: '실무 해석',
+    latestRun: '최신 실행',
+    currentStage: '현재 단계',
+    updated: '업데이트',
+    completed: '완료',
+    noStageData: '아직 단계 데이터가 없습니다.',
+    noRunMeta: '실행 메타데이터를 기다리는 중입니다.',
+    noOutputMeta: '최신 실행 결과가 없습니다'
+  }
+};
+
+function t(key) {
+  return translations[state.locale]?.[key] || translations.en[key] || key;
+}
+
+function applyLanguage() {
+  const ids = ['headerTitleSub', 'analysisLink', 'progressTitle', 'progressSummarySuffix', 'inputPanelTitle', 'outputsPanelTitle', 'uploadStrong', 'uploadBody', 'uploadLinkLabel'];
+  ids.forEach((id) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = t(id);
+  });
+  document.querySelectorAll('.lang-button').forEach((button) => {
+    button.classList.toggle('active', button.dataset.lang === state.locale);
+  });
+}
+
+const iconSymbol = {
+  eda: '◇',
+  metrics: '□',
+  dashboard: '▦',
+  report: '≡',
+  questions: '?',
+};
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function formatDuration(seconds) {
+  if (seconds == null) return '—';
+  return `${seconds.toFixed(1)}s`;
+}
+
+function formatTimestamp(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return date.toLocaleString();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderEmpty(containerId, message) {
+  document.getElementById(containerId).innerHTML = `<div class="empty-state">${escapeHtml(message)}</div>`;
+}
+
+// 분석 포인트: 짧고 직관적인 한국어 분석가 코멘트 (한 줄씩)
+function analysisPoints(output) {
+  const id = output.id;
+  const pts = {
+    'dataset-profile': [
+      '결측치·이상치 먼저 확인 → 통과 시 분석 시작',
+      '범주형 컬럼 있으면 세그먼트·지역 드릴다운 가능',
+      '행 수 적으면 통계 검정 결과 신중하게 해석',
+    ],
+    'kpi-summary': [
+      '매출↑ 마진↓이면 구조 문제 — 마진율 먼저 파악',
+      '전월 대비 변화율이 실질 판단의 기준선',
+      '지표 하나만 좋으면 함정 — 3개 동시에 확인',
+    ],
+    'eda-report': [
+      '상위 카테고리·지역 → 예산 확대 1순위 후보',
+      '최저 마진 구간 → 가격·원가 점검 바로 시작',
+      '이상치 = 데이터 오류 or 진짜 기회, 반드시 확인',
+    ],
+    'business-questions': [
+      '질문 하나 = 실행 결정 하나와 연결되어야 함',
+      '비교 가능한 질문이어야 우선순위 정할 수 있음',
+      '답 못 내면 관찰일 뿐 — 인사이트가 아님',
+    ],
+    'analysis-report': [
+      '규모(매출)·효율(마진) 동시에 봐야 진짜 성과',
+      '추세 꺾인 달 → 원인 분해 먼저, 결론 나중',
+      '액션 없는 리포트는 데이터 낭비',
+    ],
+    'executive-report': [
+      '경영진엔 결론 → 근거 순서, 역순 절대 금지',
+      '"좋아졌다" 아닌 "전환율 2.3%p 상승" 수준으로',
+      '다음 액션·담당자 없으면 보고 아님',
+    ],
+    'dashboard-spec': [
+      'KPI → 원인 → 액션 흐름으로 읽히는지 체크',
+      '차트 5개 이상이면 우선순위 다시 정렬 필요',
+      '임원용·실무자용 화면 분리 여부 확인',
+    ],
+    'action-plan': [
+      'P1 → P2 → P3 순서 반드시 지킬 것',
+      '임팩트 크고 실행 쉬운 것부터 시작',
+      '담당자 없는 액션은 실행 안 됨, 반드시 지정',
+    ],
+  };
+  return pts[id] || [];
+}
+
+function renderAnalysisPoints(output) {
+  const points = analysisPoints(output);
+  if (!points.length) return '';
+  return `
+    <div class="analysis-points">
+      <div class="analysis-points-label">분석 포인트</div>
+      ${points.map((p, i) => `
+        <div class="analysis-point-item">
+          <span class="ap-num">${i + 1}</span>
+          <span class="ap-text">${escapeHtml(p)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderInputs() {
+  // Input panel removed — no-op
+}
+
+function renderKnowledgeBase() {
+  if (!state.knowledgeBase) {
+    document.getElementById('knowledgeBase').innerHTML = '';
+    return;
+  }
+
+  const memories = (state.knowledgeBase.memories || []).map((memory) => `
+    <div class="knowledge-memory">
+      <div class="knowledge-memory-title">${escapeHtml(memory.title)}</div>
+      <div class="knowledge-memory-detail">${escapeHtml(memory.detail)}</div>
+    </div>
+  `).join('');
+
+  const rules = (state.knowledgeBase.rules || []).map((rule) => `
+    <div class="knowledge-rule">${escapeHtml(rule)}</div>
+  `).join('');
+
+  document.getElementById('knowledgeBase').innerHTML = `
+    <div class="knowledge-card">
+      <div class="knowledge-icon">✳</div>
+      <div class="knowledge-title">${escapeHtml(state.knowledgeBase.title || '지식 베이스')}</div>
+      <div class="knowledge-subtitle">${escapeHtml(state.knowledgeBase.subtitle || '')}</div>
+      <div class="knowledge-badge">${escapeHtml(state.knowledgeBase.badge || '활성')}</div>
+      <div class="knowledge-section">
+        <h4>최근 메모리</h4>
+        ${memories}
+      </div>
+      <div class="knowledge-section">
+        <h4>운영 규칙</h4>
+        ${rules}
+      </div>
+    </div>
+  `;
+}
+
+function renderStages() {
+  const stages = state.status?.stages || [];
+  const progress = state.status?.progress || { completed: 0, total: 7 };
+  document.getElementById('progressSummaryCount').textContent = `${progress.completed} / ${progress.total}`;
+  document.getElementById('progressFill').style.width = `${progress.total ? (progress.completed / progress.total) * 100 : 0}%`;
+
+  if (!stages.length) {
+    renderEmpty('topProgressStages', t('noStageData'));
+    document.getElementById('progressSummaryMeta').textContent = t('progressWaiting');
+    return;
+  }
+
+  const activeStage = stages.find((stage) => stage.status === 'processing' || stage.status === 'running');
+  const completedAt = state.status?.finished_at ? formatTimestamp(state.status.finished_at) : '진행 중';
+  document.getElementById('progressSummaryMeta').textContent =
+    activeStage
+      ? `현재 단계: ${activeStage.name} · ${activeStage.summary || '실행 중'}`
+      : `최신 실행 ${STATUS_KO[state.status?.overall_status] || '대기'} · 업데이트 ${completedAt}`;
+
+  const stageIcons = { 'data-ingestion': '⊕', 'eda': '◇', 'problem': '+', 'metrics': '▪', 'analysis': '✕', 'dashboard': '▣', 'report': '≡' };
+  const statusEmoji = { completed: '✓', processing: '▶', running: '▶', pending: '', error: '✕' };
+  document.getElementById('topProgressStages').innerHTML = stages.map((stage) => `
+    <div class="stage-pill ${escapeHtml(stage.status)}" title="${escapeHtml(stage.summary || '')}">
+      <span class="stage-pill-icon">${escapeHtml(stage.icon || stageIcons[stage.id] || '')}</span>
+      <span class="stage-pill-name">${escapeHtml(stage.name)}</span>
+      <span class="stage-pill-check">${statusEmoji[stage.status] || ''}</span>
+    </div>
+  `).join('');
+}
+
+function renderReportPreview(output, preview) {
+  const metrics = (preview.metrics || []).map((metric) => `
+    <div class="metric-card">
+      <div class="metric-value">${escapeHtml(metric.value)}</div>
+      <div class="metric-label">${escapeHtml(metric.label)}</div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="report-card">
+      ${metrics ? `<div class="report-metrics">${metrics}</div>` : ''}
+      ${renderAnalysisPoints(output)}
+    </div>
+  `;
+}
+
+function renderSectionPreview(output, preview) {
+  const metrics = (preview.metrics || []).length ? (preview.metrics || []).map((metric) => `
+    <div class="metric-card">
+      <div class="metric-value">${escapeHtml(metric.value)}</div>
+      <div class="metric-label">${escapeHtml(metric.label)}</div>
+    </div>
+  `).join('') : '';
+
+  const sections = (preview.sections || []).slice(0, 3).map((section) => `
+    <div class="section-item">
+      <span class="section-heading">${escapeHtml(section.heading)}</span>
+      <span class="section-body">${escapeHtml(section.body)}</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="section-preview">
+      ${metrics ? `<div class="report-metrics">${metrics}</div>` : ''}
+      ${sections ? `<div class="section-list">${sections}</div>` : ''}
+      ${renderAnalysisPoints(output)}
+    </div>
+  `;
+}
+
+function renderQuestionsPreview(output, preview) {
+  const questions = (preview.questions || []).slice(0, 4);
+  return `
+    <div class="questions-list">
+      ${questions.map((question, index) => `
+        <div class="question-item">
+          <span class="question-number">Q${index + 1}</span>
+          <span class="question-text">${escapeHtml(question)}</span>
+        </div>
+      `).join('')}
+      ${renderAnalysisPoints(output)}
+    </div>
+  `;
+}
+
+function renderActionPlanPreview(output, preview) {
+  const actions = (preview.actions || []).slice(0, 3);
+  return `
+    <div class="action-plan-preview">
+      <div class="action-cards">
+        ${actions.map((action) => `
+          <div class="action-card">
+            <div class="action-card-header">
+              <span class="action-priority">P${escapeHtml(String(action.priority))}</span>
+              <span class="action-owner">${escapeHtml(action.owner)}</span>
+            </div>
+            <div class="action-title">${escapeHtml(action.title)}</div>
+            <div class="action-meta">영향도: ${escapeHtml(action.impact)}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderImagePreview(preview) {
+  return `
+    <div class="preview-image">
+      <img src="./${escapeHtml(preview.image_path)}" alt="${escapeHtml(preview.title || '차트 미리보기')}">
+      <div class="preview-caption">${escapeHtml(preview.caption || '')}</div>
+    </div>
+  `;
+}
+
+function previewHtml(output) {
+  const preview = output.preview || {};
+  if (preview.kind === 'eda-report') return renderReportPreview(output, preview);
+  if (preview.kind === 'report') return renderReportPreview(output, preview);
+  if (preview.kind === 'sections') return renderSectionPreview(output, preview);
+  if (preview.kind === 'questions') return renderQuestionsPreview(output, preview);
+  if (preview.kind === 'action-plan') return renderActionPlanPreview(output, preview);
+  return `<div class="empty-state">${escapeHtml(t('noPreview'))} ${escapeHtml(output.name)}.</div>`;
+}
+
+const OUTPUT_NAMES_KO = {
+  'dataset-profile': '데이터셋 프로필',
+  'eda-report': 'EDA 리포트',
+  'business-questions': '분석 질문',
+  'kpi-summary': 'KPI 요약',
+  'analysis-report': '분석 리포트',
+  'dashboard-spec': '대시보드 명세',
+  'executive-report': '경영진 리포트',
+  'action-plan': '액션 플랜',
+};
+
+const STATUS_KO = { completed: '완료', running: '실행 중', processing: '처리 중', pending: '대기', error: '오류' };
+const STAGE_KO = { 'data-ingestion': '데이터 수집', eda: 'EDA', problem: '문제 정의', metrics: '지표 산출', analysis: '분석', dashboard: '대시보드', report: '리포트', done: '완료' };
+
+// Tier: primary = core decision outputs, secondary = supporting analysis, support = raw artifacts
+const OUTPUT_TIER = {
+  'executive-report': 'primary',
+  'kpi-summary': 'primary',
+  'action-plan': 'primary',
+  'analysis-report': 'secondary',
+  'dashboard-spec': 'secondary',
+  'dataset-profile': 'support',
+  'eda-report': 'support',
+  'business-questions': 'support',
+};
+
+function jumpToOutput(id) {
+  const el = document.getElementById(`out-${id}`);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderOutputs() {
+  const count = state.outputs.length;
+  document.getElementById('outputCount').textContent = `${count} 준비됨`;
+
+  // Build anchor bar with ALL outputs grouped by tier
+  const anchorBar = document.getElementById('outputAnchorBar');
+  if (count > 0) {
+    const TIER_ORDER = { primary: 0, secondary: 1, support: 2 };
+    const sortedAll = [...state.outputs].sort((a, b) => {
+      const ta = TIER_ORDER[OUTPUT_TIER[a.id] || 'secondary'] ?? 1;
+      const tb = TIER_ORDER[OUTPUT_TIER[b.id] || 'secondary'] ?? 1;
+      return ta - tb;
+    });
+
+    const byTier = { primary: [], secondary: [], support: [] };
+    sortedAll.forEach((o) => {
+      const tier = OUTPUT_TIER[o.id] || 'secondary';
+      byTier[tier].push(o);
+    });
+
+    const tierEmoji = { primary: '●', secondary: '◆', support: '○' };
+    const groups = ['primary', 'secondary', 'support']
+      .filter((t) => byTier[t].length > 0)
+      .map((tier) => {
+        const chips = byTier[tier].map((o) => {
+          const name = state.locale === 'ko' ? (OUTPUT_NAMES_KO[o.id] || o.name) : o.name;
+          return `<span class="anchor-chip tier-${tier}" onclick="jumpToOutput('${escapeHtml(o.id)}')">${tierEmoji[tier]} ${escapeHtml(name)}</span>`;
+        }).join('');
+        return `<div class="anchor-group">${chips}</div>`;
+      });
+
+    anchorBar.innerHTML = groups.join('<div class="anchor-group-sep"></div>');
+    // Hidden: all cards are visible at once, anchor navigation not needed
+    anchorBar.style.display = 'none';
+  } else {
+    anchorBar.style.display = 'none';
+  }
+
+  if (!count) {
+    document.getElementById('outputsList').innerHTML = `<div class="empty-state">${escapeHtml(t('outputsEmpty'))}</div>`;
+    return;
+  }
+
+  // Sort: primary → secondary → support
+  const TIER_ORDER = { primary: 0, secondary: 1, support: 2 };
+  const sortedOutputs = [...state.outputs].sort((a, b) => {
+    const ta = TIER_ORDER[OUTPUT_TIER[a.id] || 'secondary'] ?? 1;
+    const tb = TIER_ORDER[OUTPUT_TIER[b.id] || 'secondary'] ?? 1;
+    return ta - tb;
+  });
+
+  const cardsHtml = sortedOutputs.map((output) => {
+    const tier = OUTPUT_TIER[output.id] || 'secondary';
+    const tierClass = tier === 'primary' ? 'output-tier-primary' : tier === 'support' ? 'output-tier-support' : '';
+    const badgeHtml = tier === 'primary'
+      ? '<span class="output-tier-badge core">핵심</span>'
+      : tier === 'support'
+      ? '<span class="output-tier-badge support">참고</span>'
+      : '';
+    const displayName = state.locale === 'ko' ? (OUTPUT_NAMES_KO[output.id] || output.name) : output.name;
+    return `
+    <div class="output-item output-${escapeHtml(output.icon_class || 'report')} ${tierClass} expanded" id="out-${escapeHtml(output.id)}">
+      <div class="output-header">
+        <div class="output-title">
+          <div class="output-icon ${escapeHtml(output.icon_class || 'report')}">${iconSymbol[output.icon_class] || '•'}</div>
+          <div>
+            <div class="output-name">${escapeHtml(displayName)}${badgeHtml}</div>
+            <div class="output-meta">${escapeHtml(output.file_name)} · ${escapeHtml(output.meta || '')}</div>
+          </div>
+        </div>
+      </div>
+      <div class="output-preview">${previewHtml(output)}</div>
+    </div>
+    `;
+  }).join('');
+
+  document.getElementById('outputsList').innerHTML = `
+    <div class="outputs-gallery">${cardsHtml}</div>
+  `;
+}
+
+function renderHeader() {
+  const statusText = document.getElementById('statusText');
+  const statusDot = document.getElementById('statusDot');
+  if (!state.status) {
+    statusText.textContent = t('noLatestRun');
+    statusDot.classList.remove('processing');
+    return;
+  }
+  const currentStage = state.status.current_stage;
+  const stageLabel = STAGE_KO[currentStage] || currentStage;
+  const statusLabel = STATUS_KO[state.status.overall_status] || state.status.overall_status;
+  statusText.textContent = `${statusLabel} · ${stageLabel} · 실행 ${state.status.run_id}`;
+  if (state.status.overall_status === 'completed') {
+    statusDot.classList.remove('processing');
+  } else {
+    statusDot.classList.add('processing');
+  }
+}
+
+async function loadDashboard() {
+  try {
+    const [statusResponse, outputsResponse, knowledgeResponse] = await Promise.all([
+      fetch(statusUrl, { cache: 'no-store' }),
+      fetch(outputsUrl, { cache: 'no-store' }),
+      fetch(knowledgeBaseUrl, { cache: 'no-store' }),
+    ]);
+    if (!statusResponse.ok) throw new Error('status.json not found');
+    state.status = await statusResponse.json();
+    state.outputs = outputsResponse.ok ? (await outputsResponse.json()).outputs || [] : [];
+    state.knowledgeBase = knowledgeResponse.ok ? await knowledgeResponse.json() : null;
+  } catch (error) {
+    console.error(error);
+    state.status = null;
+    state.outputs = [];
+    state.knowledgeBase = null;
+  }
+
+  renderHeader();
+  renderInputs();
+  renderStages();
+  renderOutputs();
+}
+
+document.querySelectorAll('.lang-button').forEach((button) => {
+  button.addEventListener('click', () => {
+    state.locale = button.dataset.lang;
+    localStorage.setItem(localeKey, state.locale);
+    applyLanguage();
+    renderHeader();
+    renderInputs();
+    renderStages();
+    renderOutputs();
+  });
+});
+
+applyLanguage();
+loadDashboard();
+setInterval(loadDashboard, 10000);
+</script>
+
+</body>
+</html>

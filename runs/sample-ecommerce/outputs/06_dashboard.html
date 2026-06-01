@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Data Analysis Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bd:  rgba(110,93,80,0.16);
+      --bds: rgba(96,79,67,0.24);
+      --offwhite: rgba(247,244,239,0.97);
+      --lavender: rgba(237,231,245,0.96);
+      --mint:     rgba(225,241,236,0.96);
+      --rose:     rgba(247,229,235,0.96);
+      --cream:    rgba(247,241,226,0.96);
+      --beige:    rgba(239,232,223,0.97);
+      --acc: #4fb799;
+      --dk:  #2f2b27;
+      --mu:  #766c63;
+      --so:  #9a9086;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #000; color: #fff; padding: 36px 40px 80px; }
+
+    /* ── METHODOLOGY SELECTOR ── */
+    .method-section { background: rgba(14,12,10,.6); border: 1px solid var(--bds); border-radius: 22px; padding: 28px; margin-bottom: 28px; }
+    .method-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--acc); margin-bottom: 18px; }
+    .method-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .method-btn { border-radius: 16px; border: 1px solid rgba(255,255,255,.1); padding: 18px 16px; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; text-align: left; background: rgba(255,255,255,.04); }
+    .method-btn:hover { border-color: rgba(79,183,153,.3); background: rgba(79,183,153,.07); transform: translateY(-2px); }
+    .method-btn.active { border-color: var(--acc); background: rgba(79,183,153,.1); }
+    .mb-icon  { font-size: 24px; margin-bottom: 10px; }
+    .mb-num   { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: rgba(255,255,255,.35); margin-bottom: 5px; letter-spacing: .08em; }
+    .mb-title { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.85); margin-bottom: 6px; line-height: 1.35; }
+    .mb-desc  { font-size: 11px; color: rgba(255,255,255,.45); line-height: 1.55; }
+    .mb-tag   { display: inline-block; padding: 2px 7px; background: rgba(79,183,153,.12); border-radius: 5px; font-size: 10px; color: var(--acc); font-weight: 600; margin-top: 8px; }
+
+    /* ── DASHBOARD PANEL ── */
+    .dash-panel { display: none; }
+    .dash-panel.active { display: block; }
+    .dash { background: rgba(250,246,240,.97); border-radius: 20px; border: 1px solid var(--bds); overflow: hidden; box-shadow: 0 16px 48px rgba(42,30,18,.12); }
+
+    /* ── TOPBAR ── */
+    .dash-topbar { background: #000; padding: 20px 26px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+    .dash-topbar-left { flex: 1; }
+    .dash-topbar-title { font-family: 'Barlow', sans-serif; font-size: 24px; font-weight: 600; color: #fff; letter-spacing: -.02em; line-height: 1.25; }
+    .dash-topbar-title em { font-family: 'Instrument Serif', serif; font-style: italic; color: rgba(255,255,255,.65); font-weight: 400; }
+    .dash-topbar-problem { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: rgba(255,255,255,.38); margin-top: 5px; letter-spacing: .03em; }
+    .dash-topbar-meta { font-size: 11px; color: rgba(255,255,255,.35); white-space: nowrap; flex-shrink: 0; }
+
+    /* ── BODY ── */
+    .dash-body { padding: 22px; }
+
+    /* ── STORY BLOCK ── */
+    .story-block { border-bottom: 1px solid rgba(96,79,67,.12); padding: 0 0 18px; margin-bottom: 20px; }
+    .story-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+    .sf-cell { padding: 12px 14px; position: relative; }
+    .sf-cell + .sf-cell::before { content: '→'; position: absolute; left: -7px; top: 50%; transform: translateY(-50%); font-size: 12px; color: rgba(96,79,67,.3); font-family: 'JetBrains Mono', monospace; }
+    .sf-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; padding: 2px 7px; border-radius: 5px; display: inline-block; }
+    .lbl-now { background: rgba(47,43,39,.07); color: rgba(47,43,39,.5); }
+    .lbl-why { background: rgba(239,176,93,.15); color: #8a5c00; }
+    .lbl-so  { background: rgba(239,125,134,.13); color: #7a2430; }
+    .lbl-act { background: rgba(53,201,149,.14); color: #1a6b50; }
+    .sf-val  { font-family: 'Barlow', sans-serif; font-size: 16px; font-weight: 700; color: var(--dk); line-height: 1.3; margin-bottom: 4px; }
+    .sf-desc { font-size: 12px; color: rgba(47,43,39,.55); line-height: 1.65; }
+    .sf-desc strong { color: var(--dk); font-weight: 700; }
+    .num-red { color: #9b2d38; font-weight: 700; }
+    .num-grn { color: #1a6b50; font-weight: 700; }
+    .num-yel { color: #8a5c00; font-weight: 700; }
+
+    /* ── STEP HEADER ── */
+    .dash-step-hdr { display: flex; align-items: center; gap: 10px; margin: 22px 0 10px; }
+    .dash-step-hdr:first-child { margin-top: 0; }
+    .dash-step-hdr-num { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #fff; background: rgba(47,43,39,.7); padding: 3px 9px; border-radius: 6px; white-space: nowrap; }
+    .dash-step-hdr-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; color: rgba(47,43,39,.55); white-space: nowrap; }
+    .dash-step-hdr::after { content: ''; flex: 1; height: 1px; background: rgba(96,79,67,.12); }
+
+    /* ── KPI ROW ── */
+    .dash-kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .dk-box { background: #fff; border: 1px solid rgba(96,79,67,.1); border-radius: 14px; padding: 16px; }
+    .dk-val { font-family: 'Barlow', sans-serif; font-size: 26px; font-weight: 600; color: #0a0a0a; margin-bottom: 4px; }
+    .dk-lbl { font-size: 11px; color: var(--mu); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 7px; }
+    .dk-delta { font-size: 12px; font-weight: 600; }
+    .dk-delta.up   { color: #218d72; }
+    .dk-delta.dn   { color: #9b2d38; }
+    .dk-delta.warn { color: #a0620a; }
+
+    /* ── CHART GRID ── */
+    .dash-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; min-width: 0; align-items: stretch; }
+    .dash-charts > * { min-width: 0; overflow: hidden; }
+    .dash-charts.three-eq { grid-template-columns: 1fr 1fr 1fr; }
+    .dash-charts.three    { grid-template-columns: 1.6fr 1fr 1fr; }
+    .dash-charts.four     { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .dash-charts.full     { grid-template-columns: 1fr; }
+    .chart-card { background: #fff; border: 1px solid rgba(96,79,67,.1); border-radius: 14px; padding: 20px; overflow: hidden; min-width: 0; display: flex; flex-direction: column; max-height: 380px; }
+    .chart-card.primary { background: #fff; border: 1px solid rgba(96,79,67,.15); box-shadow: 0 4px 16px rgba(42,30,18,.08); max-height: 440px; }
+    .chart-card.muted { opacity: 0.75; }
+    .dash-charts:not(.full) .chart-card { min-height: 240px; }
+    .dash-charts.full .chart-card { min-height: 200px; max-height: none; }
+    .chart-card svg { display: block; width: 100%; height: auto; max-width: 100%; max-height: none; margin-top: 8px; overflow: visible; }
+    .chart-card .pp-tbl { flex: 1; }
+    .chart-card .highlight-box { margin-top: auto; }
+    .cc-title { font-size: 13px; font-weight: 700; color: var(--dk); margin-bottom: 5px; line-height: 1.45; }
+    .cc-desc  { font-size: 12px; color: var(--mu); margin-bottom: 14px; line-height: 1.65; }
+
+    /* ── ACTION ITEMS ── */
+    .dash-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .da-item  { background: rgba(247,244,239,.97); border: 1px solid rgba(96,79,67,.12); border-radius: 12px; padding: 13px 14px; }
+    .da-p     { font-size: 10px; font-weight: 700; color: rgba(47,43,39,.45); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    .da-title { font-size: 13px; font-weight: 700; color: var(--dk); margin-bottom: 5px; line-height: 1.45; }
+    .da-why   { font-size: 12px; color: rgba(47,43,39,.55); line-height: 1.65; }
+
+    /* ── SIMULATION WIDGET ── */
+    .sim-widget { background: rgba(247,241,226,.7); border: 1px solid rgba(239,176,93,.3); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+    .sim-title  { font-size: 12px; font-weight: 700; color: var(--dk); margin-bottom: 8px; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; line-height: 1.5; }
+    .sim-badge  { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 5px; background: rgba(239,176,93,.2); color: #8a5c00; border: 1px solid rgba(239,176,93,.3); white-space: nowrap; }
+    .sim-note   { font-size: 12px; color: var(--mu); line-height: 1.65; margin-bottom: 12px; }
+    .sim-row    { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .sim-label  { font-size: 11px; color: var(--mu); white-space: nowrap; }
+    .sim-input  { width: 80px; font-size: 13px; font-weight: 700; color: var(--dk); background: #fff; border: 1px solid rgba(96,79,67,.2); border-radius: 8px; padding: 5px 8px; text-align: center; font-family: 'Barlow', sans-serif; }
+    .sim-slider-group { margin-bottom: 10px; }
+    .sim-slider-row   { margin-bottom: 10px; }
+    .sim-slider-label { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .sim-range {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 5px; border-radius: 99px; outline: none; cursor: pointer;
+      background: linear-gradient(to right, #4fb799 50%, rgba(96,79,67,.15) 50%);
+      transition: background .1s;
+    }
+    .sim-range::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; border: 2px solid #4fb799;
+      box-shadow: 0 2px 8px rgba(42,30,18,.18); cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .sim-range::-webkit-slider-thumb:hover { transform: scale(1.2); box-shadow: 0 3px 12px rgba(42,30,18,.24); }
+    .sim-range-val { font-family: 'Barlow', sans-serif; font-size: 14px; font-weight: 700; color: #4fb799; }
+    .sim-scenario-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .sim-scenario-btn { flex: 1; padding: 10px 6px; border-radius: 12px; border: 1px solid rgba(96,79,67,.15); font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s; background: rgba(47,43,39,.05); color: var(--dk); text-align: center; line-height: 1.5; font-family: 'Inter', sans-serif; }
+    .sim-scenario-btn:hover { border-color: rgba(96,79,67,.28); transform: translateY(-2px); }
+    .sim-scenario-btn.active { background: rgba(79,183,153,.14); border-color: rgba(79,183,153,.4); color: #218d72; }
+    .sim-results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .sim-res     { background: #fff; border: 1px solid rgba(96,79,67,.12); border-radius: 9px; padding: 8px 10px; text-align: center; }
+    .sim-res-val { font-family: 'Barlow', sans-serif; font-size: 16px; font-weight: 600; color: var(--dk); }
+    .sim-res-lbl { font-size: 9px; color: var(--mu); margin-top: 2px; }
+
+    /* ── SCENARIO TABS (차트 카드 내부 탭) ── */
+    .sc-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .sc-tab  { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(96,79,67,.15); font-size: 10.5px; font-weight: 700; cursor: pointer; background: rgba(47,43,39,.04); color: rgba(47,43,39,.55); transition: all .15s; font-family: 'Inter', sans-serif; white-space: nowrap; }
+    .sc-tab:hover  { border-color: rgba(96,79,67,.28); color: var(--dk); }
+    .sc-tab.active { background: rgba(79,183,153,.14); border-color: rgba(79,183,153,.45); color: #1a6b50; }
+    .sc-pane        { display: none; }
+    .sc-pane.active { display: block; }
+
+    /* ── INLINE TABLE ── */
+    .pp-tbl    { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px; }
+    .pp-tbl th { background: rgba(47,43,39,.09); color: var(--dk); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; padding: 8px 11px; text-align: left; }
+    .pp-tbl td { padding: 8px 11px; color: var(--dk); border-top: 1px solid rgba(96,79,67,.08); vertical-align: top; line-height: 1.6; }
+
+    /* ── METRIC HIERARCHY CARDS ── */
+    .mh-wrap  { padding: 4px 0; }
+    .mh-tier  { margin-bottom: 14px; }
+    .mh-tier-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 7px; }
+    .mh-tier-label::after { content: ''; flex: 1; height: 1px; background: rgba(96,79,67,.12); }
+    .mh-output .mh-tier-label { color: #218d72; }
+    .mh-driver .mh-tier-label { color: #5b6bbf; }
+    .mh-input  .mh-tier-label { color: #a0620a; }
+    .mh-cards  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .mh-card   { border-radius: 11px; border: 1px solid rgba(96,79,67,.14); padding: 9px 12px; display: flex; flex-direction: column; gap: 2px; }
+    .mh-output .mh-card { background: rgba(225,241,236,.85); border-color: rgba(79,183,153,.25); }
+    .mh-driver .mh-card { background: rgba(237,231,245,.85); border-color: rgba(91,107,191,.2); }
+    .mh-input  .mh-card { background: rgba(247,241,226,.85); border-color: rgba(239,176,93,.25); }
+    .mh-card-val  { font-family: 'Barlow', sans-serif; font-size: 19px; font-weight: 600; color: var(--dk); }
+    .mh-card-name { font-size: 11px; font-weight: 600; color: var(--dk); }
+    .mh-card-note { font-size: 10px; color: var(--mu); line-height: 1.5; }
+    .mh-arrow { width: 100%; display: flex; justify-content: center; margin: 2px 0; color: rgba(96,79,67,.3); font-size: 12px; }
+
+    /* ── TAGS ── */
+    .tag-ok   { display: inline-block; background: rgba(53,201,149,.18); color: #0d7a5c; border-radius: 5px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+    .tag-warn { display: inline-block; background: rgba(239,176,93,.2);  color: #a0620a; border-radius: 5px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+    .tag-bad  { display: inline-block; background: rgba(239,125,134,.2); color: #9b2d38; border-radius: 5px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+
+    /* ── HIGHLIGHT BOX ── */
+    .highlight-box { border-radius: 9px; padding: 10px 12px; font-size: 12px; line-height: 1.65; margin-top: 10px; }
+    .highlight-box.warn { background: rgba(239,125,134,.1); border: 1px solid rgba(239,125,134,.25); color: #7a2430; }
+    .highlight-box.ok   { background: rgba(53,201,149,.1);  border: 1px solid rgba(53,201,149,.25); color: #1a6b50; }
+    .highlight-box.info { background: rgba(91,107,191,.08); border: 1px solid rgba(91,107,191,.2);  color: #3d4fa0; }
+
+    /* ── AI WORKBENCH (세그먼테이션 인사이트 카드) ── */
+    .aiw-grid      { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .aiw-card      { background: rgba(247,244,239,.97); border-radius: 18px; border: 1px solid rgba(96,79,67,.14); padding: 18px 20px 16px; }
+    .aiw-card-head { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 12px; }
+    .aiw-card-icon { width: 34px; height: 34px; border-radius: 10px; background: rgba(47,43,39,.09); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .aiw-card-title { font-size: 14px; font-weight: 700; color: var(--dk); margin-bottom: 3px; }
+    .aiw-card-sub   { font-size: 11px; color: var(--mu); font-family: 'JetBrains Mono', monospace; line-height: 1.5; }
+    .aiw-badge { margin-left: auto; font-size: 9px; font-weight: 700; padding: 3px 9px; background: rgba(91,142,240,.12); border: 1px solid rgba(91,142,240,.22); border-radius: 99px; color: #3b5bbf; white-space: nowrap; }
+    .aiw-insights  { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 10px; }
+    .aiw-ins       { background: rgba(47,43,39,.05); border: 1px solid rgba(96,79,67,.1); border-radius: 8px; padding: 7px 10px; display: flex; justify-content: space-between; align-items: center; }
+    .aiw-ins-label { font-size: 11px; color: var(--mu); }
+    .aiw-ins-val   { font-size: 13px; font-weight: 700; color: var(--dk); }
+    .aiw-seg-row   { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .aiw-seg       { border-radius: 10px; border: 1px solid rgba(96,79,67,.12); padding: 10px 12px; }
+    .aiw-seg-name  { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+    .aiw-seg-stat  { font-size: 10px; color: var(--mu); margin-bottom: 4px; }
+    .aiw-seg-act   { font-size: 10px; color: var(--dk); font-weight: 600; }
+    .aiw-action    { font-size: 12px; font-weight: 700; color: #218d72; background: rgba(79,183,153,.1); border: 1px solid rgba(79,183,153,.2); border-radius: 8px; padding: 10px 13px; }
+
+    /* ── FOOTNOTE ── */
+    .footnote { text-align: center; font-size: 11px; color: rgba(255,255,255,.2); margin-top: 32px; font-family: 'JetBrains Mono', monospace; letter-spacing: .05em; }
+
+    /* SVG 폰트 통일 */
+    .dash svg text { font-family: 'Inter', -apple-system, sans-serif; font-style: normal; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .method-grid { grid-template-columns: 1fr 1fr; }
+      .dash-charts, .dash-charts.three-eq, .dash-charts.three { grid-template-columns: 1fr; }
+      .story-flow { grid-template-columns: 1fr 1fr; }
+      .aiw-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      body { padding: 20px 16px 60px; }
+      .dash-kpi-row { grid-template-columns: 1fr 1fr; }
+      .dash-actions { grid-template-columns: 1fr; }
+      .sim-results  { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+  METHODOLOGY SELECTOR
+════════════════════════════════════════════ -->
+<div class="method-section">
+  <div class="method-label">Analysis · 4 Methodologies from Pipeline</div>
+  <div class="method-grid">
+    <div class="method-btn active" onclick="switchPanel(0,this)">
+      <div class="mb-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="10" width="4" height="10" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="9" y="6" width="4" height="14" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="16" y="2" width="4" height="18" rx="1" fill="rgba(255,255,255,0.5)"/></svg></div>
+      <div class="mb-num">01 — ANALYSIS A</div>
+      <div class="mb-title">"예산 많을수록 성과가 낮다" — 채널 예산 배분 비효율</div>
+      <div class="mb-desc">채널별 예산 비중과 ROAS의 역비례 관계 분석. 어떤 채널에 예산을 재배분해야 하는가.</div>
+      <div class="mb-tag">채널 비교 분석</div>
+    </div>
+    <div class="method-btn" onclick="switchPanel(1,this)">
+      <div class="mb-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8.5" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/><circle cx="11" cy="11" r="4.5" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/><circle cx="11" cy="11" r="1.5" fill="rgba(255,255,255,0.5)"/></svg></div>
+      <div class="mb-num">02 — ANALYSIS B</div>
+      <div class="mb-title">"리타게팅이 왜 가장 낮은가?" — 타깃 유형 성과 역전</div>
+      <div class="mb-desc">UA·lookalike·retargeting 타깃 유형별 ROAS 비교. 리타게팅 성과 저하 원인 진단.</div>
+      <div class="mb-tag">타깃 유형 분석</div>
+    </div>
+    <div class="method-btn" onclick="switchPanel(2,this)">
+      <div class="mb-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><polyline points="2,16 7,10 11,13 16,7 20,4" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><polyline points="16,4 20,4 20,8" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+      <div class="mb-num">03 — ANALYSIS C</div>
+      <div class="mb-title">"볼륨이 전환을 만들지 않는다" — CVR vs 노출 분석</div>
+      <div class="mb-desc">채널별 노출·클릭·전환율의 상관 관계. 볼륨 증가가 CVR 희석을 일으키는 구조 확인.</div>
+      <div class="mb-tag">CVR 퍼널 분석</div>
+    </div>
+    <div class="method-btn" onclick="switchPanel(3,this)">
+      <div class="mb-icon"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="14" width="3" height="5" rx="1" fill="rgba(255,255,255,0.3)"/><rect x="8" y="10" width="3" height="9" rx="1" fill="rgba(255,255,255,0.4)"/><rect x="13" y="6" width="3" height="13" rx="1" fill="rgba(255,255,255,0.5)"/><rect x="18" y="2" width="3" height="17" rx="1" fill="rgba(255,255,255,0.7)"/></svg></div>
+      <div class="mb-num">04 — ANALYSIS D</div>
+      <div class="mb-title">"예산 재배분 시뮬레이션" — ROAS 개선 시나리오</div>
+      <div class="mb-desc">하위 채널 예산을 naver 계열로 이동했을 때 ROAS 개선 효과 시뮬레이션.</div>
+      <div class="mb-tag">시나리오 시뮬레이션</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════  PANEL 0 — Analysis A ════════════════════════════════════════════ -->
+<div class="dash-panel active" id="panel-0">
+<div class="dash">
+  <div class="dash-topbar">
+    <div class="dash-topbar-left">
+      <div class="dash-topbar-title">채널 예산 배분 비효율 — <em>Budget vs ROAS · Channel Comparison</em></div>
+      <div class="dash-topbar-problem">문제: google·kakao·youtube가 예산의 58%를 차지하지만 ROAS는 7~8대에 불과 — naver 계열(ROAS 17~18)과 2배 이상 격차</div>
+    </div>
+    <span class="dash-topbar-meta">ad_performance.csv · 2025.1–12 · 12개월</span>
+  </div>
+  <div class="dash-body">
+    <div class="story-block">
+      <div class="story-flow">
+        <div class="sf-cell">
+          <div class="sf-label lbl-now">현황</div>
+          <div class="sf-val">ROAS 10.98</div>
+          <div class="sf-desc">naver 17.92 · google 7.93<br>최고-최저 <span class="num-red">2.3배 격차</span></div>
+        </div>
+        <div class="sf-cell">
+          <div class="sf-label lbl-why">원인</div>
+          <div class="sf-val">예산 역배분</div>
+          <div class="sf-desc">저성과 3채널이 <strong>예산 58%</strong><br>naver 계열은 25.7%뿐</div>
+        </div>
+        <div class="sf-cell">
+          <div class="sf-label lbl-so">결과</div>
+          <div class="sf-val">ROAS 손실</div>
+          <div class="sf-desc">최적 배분 대비 <span class="num-red">약 16.8% 손실</span><br>광고비 낭비 구조 고착</div>
+        </div>
+        <div class="sf-cell">
+          <div class="sf-label lbl-act">기회</div>
+          <div class="sf-val">ROAS +16.8%</div>
+          <div class="sf-desc">20% 예산 이동만으로<br>ROAS 12.83 달성 가능</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 1</span><span class="dash-step-hdr-label">현황 파악 — 지금 어디 있지?</span></div>
+    <div class="dash-kpi-row">
+      <div class="dk-box">
+        <div class="dk-lbl">전체 ROAS (MMP)</div>
+        <div class="dk-val">10.98</div>
+        <div class="dk-delta warn">최고 채널의 61% 수준</div>
+      </div>
+      <div class="dk-box">
+        <div class="dk-lbl">CVR</div>
+        <div class="dk-val">3.25%</div>
+        <div class="dk-delta up">클릭 대비 전환 양호</div>
+      </div>
+      <div class="dk-box" style="border-color:rgba(53,201,149,.3)">
+        <div class="dk-lbl">최고 ROAS 채널 (naver)</div>
+        <div class="dk-val">17.92</div>
+        <div class="dk-delta up">예산 비중 12.84%로 저평가</div>
+      </div>
+      <div class="dk-box" style="border-color:rgba(239,125,134,.3)">
+        <div class="dk-lbl">최저 ROAS 채널 (youtube)</div>
+        <div class="dk-val">7.75</div>
+        <div class="dk-delta dn">예산 19.40% 투입 비효율</div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 2</span><span class="dash-step-hdr-label">원인 확인 — 왜 이렇게 됐지?</span></div>
+    <!-- 차트 행 1: 3열 -->
+    <div class="dash-charts three-eq">
+      <div class="chart-card">
+        <div class="cc-title">채널별 ROAS — naver 계열이 나머지보다 2.3배 높다</div>
+        <div class="cc-desc">채널 6개 ROAS 비교. naver(17.92)·naver_search(17.72)가 압도적 1위, youtube(7.75)가 최하위.</div>
+        <svg viewBox="0 0 320 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="30" y1="10" x2="30" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="30" y1="140" x2="305" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="30" y1="65" x2="305" y2="65" stroke="rgba(239,176,93,.45)" stroke-dasharray="4,3" stroke-width="1.5"/>
+          <text x="307" y="68" font-size="8" fill="#a0620a">avg</text>
+          <rect x="38"  y="15"  width="32" height="125" fill="rgba(53,201,149,.75)" rx="4"/>
+          <text x="54"  y="10"  text-anchor="middle" font-size="10" fill="#218d72" font-weight="700">17.92</text>
+          <rect x="82"  y="16"  width="32" height="124" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="98"  y="11"  text-anchor="middle" font-size="10" fill="#218d72" font-weight="700">17.72</text>
+          <rect x="126" y="62"  width="32" height="78" fill="rgba(91,142,240,.65)" rx="4"/>
+          <text x="142" y="57"  text-anchor="middle" font-size="10" fill="#3b5bbf" font-weight="700">11.25</text>
+          <rect x="170" y="84"  width="32" height="56" fill="rgba(239,125,134,.65)" rx="4"/>
+          <text x="186" y="79"  text-anchor="middle" font-size="10" fill="#9b2d38" font-weight="700">7.99</text>
+          <rect x="214" y="84"  width="32" height="56" fill="rgba(239,125,134,.55)" rx="4"/>
+          <text x="230" y="79"  text-anchor="middle" font-size="10" fill="#9b2d38" font-weight="700">7.93</text>
+          <rect x="258" y="86"  width="32" height="54" fill="rgba(239,125,134,.45)" rx="4"/>
+          <text x="274" y="81"  text-anchor="middle" font-size="10" fill="#9b2d38" font-weight="700">7.75</text>
+          <text x="54"  y="154" text-anchor="middle" font-size="9" fill="var(--mu)">naver</text>
+          <text x="98"  y="154" text-anchor="middle" font-size="9" fill="var(--mu)">n_srch</text>
+          <text x="142" y="154" text-anchor="middle" font-size="9" fill="var(--mu)">meta</text>
+          <text x="186" y="154" text-anchor="middle" font-size="9" fill="var(--mu)">kakao</text>
+          <text x="230" y="154" text-anchor="middle" font-size="9" fill="var(--mu)">google</text>
+          <text x="274" y="154" text-anchor="middle" font-size="9" fill="var(--mu)">youtube</text>
+          <text x="54"  y="167" text-anchor="middle" font-size="8" fill="#218d72">12.84%</text>
+          <text x="98"  y="167" text-anchor="middle" font-size="8" fill="#218d72">12.89%</text>
+          <text x="142" y="167" text-anchor="middle" font-size="8" fill="#3b5bbf">16.04%</text>
+          <text x="186" y="167" text-anchor="middle" font-size="8" fill="#9b2d38">19.38%</text>
+          <text x="230" y="167" text-anchor="middle" font-size="8" fill="#9b2d38">19.46%</text>
+          <text x="274" y="167" text-anchor="middle" font-size="8" fill="#9b2d38">19.40%</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">예산 비중 vs ROAS — 역비례: 예산 많을수록 ROAS 낮다</div>
+        <div class="cc-desc">예산 비중(파란 막대)과 ROAS(초록 막대)를 채널별로 나란히 비교. 역비례 패턴이 명확하다.</div>
+        <svg viewBox="0 0 320 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="30" y1="10" x2="30" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="30" y1="140" x2="305" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- naver: budget 12.84%→38px, ROAS 17.92→107px -->
+          <rect x="38"  y="102" width="18" height="38" fill="rgba(91,142,240,.7)" rx="3"/>
+          <text x="47"  y="98"  text-anchor="middle" font-size="8" fill="#3b5bbf">12.8%</text>
+          <rect x="58"  y="33"  width="18" height="107" fill="rgba(53,201,149,.7)" rx="3"/>
+          <text x="67"  y="28"  text-anchor="middle" font-size="8" fill="#218d72" font-weight="700">17.9</text>
+          <!-- naver_search: 12.89%, 17.72 -->
+          <rect x="84"  y="101" width="18" height="39" fill="rgba(91,142,240,.7)" rx="3"/>
+          <text x="93"  y="97"  text-anchor="middle" font-size="8" fill="#3b5bbf">12.9%</text>
+          <rect x="104" y="34"  width="18" height="106" fill="rgba(53,201,149,.6)" rx="3"/>
+          <text x="113" y="29"  text-anchor="middle" font-size="8" fill="#218d72" font-weight="700">17.7</text>
+          <!-- meta: 16.04%, 11.25 -->
+          <rect x="130" y="92"  width="18" height="48" fill="rgba(91,142,240,.6)" rx="3"/>
+          <text x="139" y="88"  text-anchor="middle" font-size="8" fill="#3b5bbf">16.0%</text>
+          <rect x="150" y="73"  width="18" height="67" fill="rgba(91,142,240,.45)" rx="3"/>
+          <text x="159" y="69"  text-anchor="middle" font-size="8" fill="#3b5bbf" font-weight="700">11.3</text>
+          <!-- kakao: 19.38%, 7.99 -->
+          <rect x="176" y="82"  width="18" height="58" fill="rgba(239,125,134,.7)" rx="3"/>
+          <text x="185" y="78"  text-anchor="middle" font-size="8" fill="#9b2d38">19.4%</text>
+          <rect x="196" y="92"  width="18" height="48" fill="rgba(239,125,134,.4)" rx="3"/>
+          <text x="205" y="88"  text-anchor="middle" font-size="8" fill="#9b2d38" font-weight="700">8.0</text>
+          <!-- google: 19.46%, 7.93 -->
+          <rect x="222" y="82"  width="18" height="58" fill="rgba(239,125,134,.7)" rx="3"/>
+          <text x="231" y="78"  text-anchor="middle" font-size="8" fill="#9b2d38">19.5%</text>
+          <rect x="242" y="93"  width="18" height="47" fill="rgba(239,125,134,.4)" rx="3"/>
+          <text x="251" y="89"  text-anchor="middle" font-size="8" fill="#9b2d38" font-weight="700">7.9</text>
+          <!-- youtube: 19.40%, 7.75 -->
+          <rect x="268" y="82"  width="18" height="58" fill="rgba(239,125,134,.7)" rx="3"/>
+          <text x="277" y="78"  text-anchor="middle" font-size="8" fill="#9b2d38">19.4%</text>
+          <rect x="288" y="94"  width="18" height="46" fill="rgba(239,125,134,.35)" rx="3"/>
+          <text x="297" y="90"  text-anchor="middle" font-size="8" fill="#9b2d38" font-weight="700">7.8</text>
+          <text x="57"  y="154" text-anchor="middle" font-size="8" fill="var(--mu)">naver</text>
+          <text x="103" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">n_srch</text>
+          <text x="149" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">meta</text>
+          <text x="195" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">kakao</text>
+          <text x="241" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">google</text>
+          <text x="287" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">youtube</text>
+          <rect x="30" y="165" width="7" height="6" fill="rgba(91,142,240,.7)" rx="1"/><text x="40" y="171" font-size="8" fill="var(--mu)">예산 비중</text>
+          <rect x="105" y="165" width="7" height="6" fill="rgba(53,201,149,.7)" rx="1"/><text x="115" y="171" font-size="8" fill="var(--mu)">ROAS</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">채널별 예산 비중 — 저성과 3채널이 예산의 58% 점유</div>
+        <div class="cc-desc">채널별 예산 배분 수평 바. ROAS 10 미만 채널(google·kakao·youtube)이 과반 점유.</div>
+        <svg viewBox="0 0 280 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="72" y1="10" x2="72" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <rect x="74" y="14"  width="170" height="20" fill="rgba(239,125,134,.6)" rx="4"/>
+          <text x="247" y="28" font-size="10" fill="#9b2d38" font-weight="700">19.46%</text>
+          <text x="67" y="28"  text-anchor="end" font-size="10" fill="var(--mu)">google</text>
+          <text x="159" y="27" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">ROAS 7.93</text>
+          <rect x="74" y="40"  width="169" height="20" fill="rgba(239,125,134,.55)" rx="4"/>
+          <text x="246" y="54" font-size="10" fill="#9b2d38" font-weight="700">19.38%</text>
+          <text x="67" y="54"  text-anchor="end" font-size="10" fill="var(--mu)">kakao</text>
+          <text x="159" y="53" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">ROAS 7.99</text>
+          <rect x="74" y="66"  width="169" height="20" fill="rgba(239,125,134,.5)" rx="4"/>
+          <text x="246" y="80" font-size="10" fill="#9b2d38" font-weight="700">19.40%</text>
+          <text x="67" y="80"  text-anchor="end" font-size="10" fill="var(--mu)">youtube</text>
+          <text x="159" y="79" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">ROAS 7.75</text>
+          <rect x="74" y="92"  width="140" height="20" fill="rgba(91,142,240,.55)" rx="4"/>
+          <text x="217" y="106" font-size="10" fill="#3b5bbf" font-weight="700">16.04%</text>
+          <text x="67" y="106" text-anchor="end" font-size="10" fill="var(--mu)">meta</text>
+          <text x="144" y="105" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">ROAS 11.25</text>
+          <rect x="74" y="118" width="113" height="20" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="190" y="132" font-size="10" fill="#218d72" font-weight="700">12.89%</text>
+          <text x="67" y="132" text-anchor="end" font-size="10" fill="var(--mu)">n_srch</text>
+          <text x="130" y="131" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">ROAS 17.72</text>
+          <rect x="74" y="144" width="112" height="20" fill="rgba(53,201,149,.75)" rx="4"/>
+          <text x="189" y="158" font-size="10" fill="#218d72" font-weight="700">12.84%</text>
+          <text x="67" y="158" text-anchor="end" font-size="10" fill="var(--mu)">naver</text>
+          <text x="130" y="157" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">ROAS 17.92</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 2: 2열 — 월별추세 + CPA -->
+    <div class="dash-charts" style="grid-template-columns: 1.5fr 1fr;">
+      <div class="chart-card primary" style="min-height:280px;">
+        <div class="cc-title">월별 채널 ROAS 추세 — naver 계열은 연중 안정 고공, 나머지는 저공 유지</div>
+        <div class="cc-desc">12개월 ROAS 라인 차트. naver(초록)·naver_search(민트)는 17~19대 유지, 나머지 3채널은 7~11대.</div>
+        <svg viewBox="0 0 620 210" width="100%" height="auto" style="flex:1; max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="45" y1="10" x2="45" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="45" y1="155" x2="580" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="45" y1="90" x2="580" y2="90" stroke="rgba(96,79,67,.07)" stroke-dasharray="4,3" stroke-width="1"/>
+          <text x="40" y="93" text-anchor="end" font-size="8" fill="var(--mu)">13</text>
+          <line x1="45" y1="118" x2="580" y2="118" stroke="rgba(96,79,67,.07)" stroke-dasharray="4,3" stroke-width="1"/>
+          <text x="40" y="121" text-anchor="end" font-size="8" fill="var(--mu)">10</text>
+          <!-- naver: y=155-(v-6)*9.3 -->
+          <polyline points="50,35 97,38 144,51 191,50 238,36 285,44 332,43 379,47 426,47 473,51 520,40 567,48"
+            fill="none" stroke="rgba(53,201,149,.85)" stroke-width="2.5" stroke-linejoin="round"/>
+          <!-- naver_search -->
+          <polyline points="50,42 97,45 144,40 191,61 238,50 285,54 332,48 379,47 426,40 473,39 520,52 567,45"
+            fill="none" stroke="rgba(79,183,153,.7)" stroke-width="2" stroke-linejoin="round" stroke-dasharray="5,2"/>
+          <!-- meta -->
+          <polyline points="50,107 97,109 144,105 191,109 238,111 285,109 332,107 379,107 426,111 473,105 520,107 567,108"
+            fill="none" stroke="rgba(91,142,240,.75)" stroke-width="2" stroke-linejoin="round"/>
+          <!-- google -->
+          <polyline points="50,127 97,137 144,136 191,135 238,137 285,140 332,136 379,141 426,138 473,132 520,139 567,141"
+            fill="none" stroke="rgba(239,125,134,.7)" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- kakao -->
+          <polyline points="50,137 97,135 144,138 191,137 238,130 285,136 332,130 379,137 426,140 473,133 520,133 567,136"
+            fill="none" stroke="rgba(239,176,93,.7)" stroke-width="1.5" stroke-linejoin="round"/>
+          <!-- youtube -->
+          <polyline points="50,137 97,141 144,136 191,143 238,130 285,137 332,136 379,130 426,139 473,144 520,140 567,139"
+            fill="none" stroke="rgba(150,120,100,.5)" stroke-width="1.5" stroke-linejoin="round"/>
+          <text x="50"  y="168" text-anchor="middle" font-size="8" fill="var(--mu)">1월</text>
+          <text x="97"  y="168" text-anchor="middle" font-size="8" fill="var(--mu)">2월</text>
+          <text x="144" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">3월</text>
+          <text x="191" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">4월</text>
+          <text x="238" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">5월</text>
+          <text x="285" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">6월</text>
+          <text x="332" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">7월</text>
+          <text x="379" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">8월</text>
+          <text x="426" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">9월</text>
+          <text x="473" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">10월</text>
+          <text x="520" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">11월</text>
+          <text x="567" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">12월</text>
+          <rect x="45"  y="180" width="8" height="5" fill="rgba(53,201,149,.85)" rx="1"/><text x="56"  y="185" font-size="8" fill="var(--mu)">naver</text>
+          <rect x="110" y="180" width="8" height="5" fill="rgba(79,183,153,.7)" rx="1"/><text x="121" y="185" font-size="8" fill="var(--mu)">n_srch</text>
+          <rect x="185" y="180" width="8" height="5" fill="rgba(91,142,240,.75)" rx="1"/><text x="196" y="185" font-size="8" fill="var(--mu)">meta</text>
+          <rect x="245" y="180" width="8" height="5" fill="rgba(239,125,134,.7)" rx="1"/><text x="256" y="185" font-size="8" fill="var(--mu)">google</text>
+          <rect x="315" y="180" width="8" height="5" fill="rgba(239,176,93,.7)" rx="1"/><text x="326" y="185" font-size="8" fill="var(--mu)">kakao</text>
+          <rect x="380" y="180" width="8" height="5" fill="rgba(150,120,100,.5)" rx="1"/><text x="391" y="185" font-size="8" fill="var(--mu)">youtube</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">채널별 CPA — naver 계열이 최저, youtube가 최고</div>
+        <div class="cc-desc">CPA(원)가 낮을수록 효율이 높다. naver(9,790원)가 youtube(15,116원)보다 54% 저렴.</div>
+        <svg viewBox="0 0 300 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <!-- max CPA 15116 → bar ends at x=230 (max w=156px). scale=156/15116=0.01032px/원
+               텍스트는 막대 안 오른쪽(text-anchor=end, white) -->
+          <line x1="72" y1="10" x2="72" y2="165" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- naver: 9790 → w=101 -->
+          <rect x="74" y="18"  width="101" height="22" fill="rgba(53,201,149,.75)" rx="4"/>
+          <text x="170" y="33" text-anchor="end" font-size="9" fill="#fff" font-weight="700">9,790원</text>
+          <text x="67"  y="33" text-anchor="end" font-size="9" fill="var(--mu)">naver</text>
+          <!-- naver_search: 10052 → w=104 -->
+          <rect x="74" y="46"  width="104" height="22" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="173" y="61" text-anchor="end" font-size="9" fill="#fff" font-weight="700">10,052원</text>
+          <text x="67"  y="61" text-anchor="end" font-size="9" fill="var(--mu)">n_srch</text>
+          <!-- meta: 12318 → w=127 -->
+          <rect x="74" y="74"  width="127" height="22" fill="rgba(91,142,240,.6)"  rx="4"/>
+          <text x="196" y="89" text-anchor="end" font-size="9" fill="#fff" font-weight="700">12,318원</text>
+          <text x="67"  y="89" text-anchor="end" font-size="9" fill="var(--mu)">meta</text>
+          <!-- kakao: 14575 → w=150 -->
+          <rect x="74" y="102" width="150" height="22" fill="rgba(239,125,134,.6)" rx="4"/>
+          <text x="219" y="117" text-anchor="end" font-size="9" fill="#fff" font-weight="700">14,575원</text>
+          <text x="67"  y="117" text-anchor="end" font-size="9" fill="var(--mu)">kakao</text>
+          <!-- google: 14780 → w=153 -->
+          <rect x="74" y="130" width="153" height="22" fill="rgba(239,125,134,.7)" rx="4"/>
+          <text x="222" y="145" text-anchor="end" font-size="9" fill="#fff" font-weight="700">14,780원</text>
+          <text x="67"  y="145" text-anchor="end" font-size="9" fill="var(--mu)">google</text>
+          <!-- youtube: 15116 → w=156 -->
+          <rect x="74" y="158" width="156" height="22" fill="rgba(239,125,134,.8)" rx="4"/>
+          <text x="225" y="173" text-anchor="end" font-size="9" fill="#fff" font-weight="700">15,116원</text>
+          <text x="67"  y="173" text-anchor="end" font-size="9" fill="var(--mu)">youtube</text>
+          <text x="74" y="190" font-size="8" fill="var(--mu)">← 낮을수록 효율 높음</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 3: 3열 — CVR + 도넛 + 재배분 시나리오 -->
+    <div class="dash-charts three-eq">
+      <div class="chart-card">
+        <div class="cc-title">채널별 CVR — 전 채널 3.19~3.30%로 균일</div>
+        <div class="cc-desc">전환율 편차 최소 (max-min = 0.11%p). 채널 간 CVR 차이는 미미하며 ROAS 격차의 원인이 아님.</div>
+        <svg viewBox="0 0 300 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <!-- CVR range 3.0~3.4, scale: 0.4→120px, 0.01=3px. baseline y=140, min=3.0 -->
+          <line x1="40" y1="10" x2="40" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="140" x2="275" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="20" x2="275" y2="20" stroke="rgba(96,79,67,.07)" stroke-dasharray="3,3" stroke-width="1"/>
+          <text x="35" y="23" text-anchor="end" font-size="7" fill="var(--mu)">3.4%</text>
+          <line x1="40" y1="80" x2="275" y2="80" stroke="rgba(96,79,67,.07)" stroke-dasharray="3,3" stroke-width="1"/>
+          <text x="35" y="83" text-anchor="end" font-size="7" fill="var(--mu)">3.2%</text>
+          <!-- naver: 3.27% → h=81 y=59 -->
+          <rect x="50"  y="59"  width="25" height="81" fill="rgba(53,201,149,.75)" rx="3"/>
+          <text x="62"  y="54"  text-anchor="middle" font-size="9" fill="#218d72" font-weight="700">3.27%</text>
+          <!-- naver_search: 3.19% → h=57 y=83 -->
+          <rect x="83"  y="83"  width="25" height="57" fill="rgba(53,201,149,.6)" rx="3"/>
+          <text x="95"  y="78"  text-anchor="middle" font-size="9" fill="#218d72" font-weight="700">3.19%</text>
+          <!-- meta: 3.27% -->
+          <rect x="116" y="59"  width="25" height="81" fill="rgba(91,142,240,.6)" rx="3"/>
+          <text x="128" y="54"  text-anchor="middle" font-size="9" fill="#3b5bbf" font-weight="700">3.27%</text>
+          <!-- kakao: 3.30% → h=90 y=50 -->
+          <rect x="149" y="50"  width="25" height="90" fill="rgba(239,125,134,.6)" rx="3"/>
+          <text x="161" y="45"  text-anchor="middle" font-size="9" fill="#9b2d38" font-weight="700">3.30%</text>
+          <!-- google: 3.25% → h=75 y=65 -->
+          <rect x="182" y="65"  width="25" height="75" fill="rgba(239,125,134,.5)" rx="3"/>
+          <text x="194" y="60"  text-anchor="middle" font-size="9" fill="#9b2d38" font-weight="700">3.25%</text>
+          <!-- youtube: 3.19% → h=57 y=83 -->
+          <rect x="215" y="83"  width="25" height="57" fill="rgba(239,125,134,.4)" rx="3"/>
+          <text x="227" y="78"  text-anchor="middle" font-size="9" fill="#9b2d38" font-weight="700">3.19%</text>
+          <text x="62"  y="154" text-anchor="middle" font-size="8" fill="var(--mu)">naver</text>
+          <text x="95"  y="154" text-anchor="middle" font-size="8" fill="var(--mu)">n_srch</text>
+          <text x="128" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">meta</text>
+          <text x="161" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">kakao</text>
+          <text x="194" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">google</text>
+          <text x="227" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">youtube</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">채널별 예산 비중 도넛 차트 — 저성과 58% 시각화</div>
+        <div class="cc-desc">6개 채널 예산 배분을 도넛으로 표현. 초록(naver 계열 25.7%) vs 빨강(저성과 3채널 58.2%).</div>
+        <svg viewBox="0 0 280 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <!--
+            Donut: cx=140, cy=85, r=70, inner r=40
+            각도 계산 (시계방향, 12시=0°):
+            Point(θ) = (140 + 70·sin θ,  85 − 70·cos θ)
+
+            채널 누적 %:
+            google      19.46%  → 0° ~ 70.06°
+            kakao       19.38%  → 70.06° ~ 139.73°
+            youtube     19.40%  → 139.73° ~ 209.57°
+            meta        16.04%  → 209.57° ~ 267.29°
+            naver_srch  12.89%  → 267.29° ~ 313.69°
+            naver       12.84%  → 313.69° ~ 360°
+
+            좌표 (소수 1자리):
+            P0  (0°)      = (140.0,  15.0)
+            P1  (70.06°)  = (205.7,  61.0)
+            P2  (139.73°) = (185.0, 138.6)
+            P3  (209.57°) = (105.5, 145.9)
+            P4  (267.29°) = (70.1,   87.9)
+            P5  (313.69°) = (89.6,   36.4)
+          -->
+          <!-- google: P0→P1, <180° → large-arc=0 -->
+          <path d="M140,85 L140,15 A70,70 0 0,1 205.7,61.0 Z" fill="rgba(239,125,134,.65)"/>
+          <!-- kakao: P1→P2, <180° → large-arc=0 -->
+          <path d="M140,85 L205.7,61.0 A70,70 0 0,1 185.0,138.6 Z" fill="rgba(239,125,134,.5)"/>
+          <!-- youtube: P2→P3, <180° → large-arc=0 -->
+          <path d="M140,85 L185.0,138.6 A70,70 0 0,1 105.5,145.9 Z" fill="rgba(239,125,134,.35)"/>
+          <!-- meta: P3→P4, <180° → large-arc=0 -->
+          <path d="M140,85 L105.5,145.9 A70,70 0 0,1 70.1,87.9 Z" fill="rgba(91,142,240,.55)"/>
+          <!-- naver_search: P4→P5, <180° → large-arc=0 -->
+          <path d="M140,85 L70.1,87.9 A70,70 0 0,1 89.6,36.4 Z" fill="rgba(53,201,149,.65)"/>
+          <!-- naver: P5→P0, <180° → large-arc=0 -->
+          <path d="M140,85 L89.6,36.4 A70,70 0 0,1 140,15 Z" fill="rgba(53,201,149,.8)"/>
+          <!-- inner hole -->
+          <circle cx="140" cy="85" r="40" fill="#fff"/>
+          <text x="140" y="80" text-anchor="middle" font-size="10" fill="var(--mu)" font-weight="600">저성과</text>
+          <text x="140" y="95" text-anchor="middle" font-size="14" fill="#9b2d38" font-weight="700">58.2%</text>
+          <!-- legend -->
+          <rect x="14" y="163" width="8" height="8" fill="rgba(53,201,149,.8)" rx="1"/>
+          <text x="26" y="171" font-size="8" fill="var(--mu)">naver 계열 25.7%</text>
+          <rect x="140" y="163" width="8" height="8" fill="rgba(239,125,134,.55)" rx="1"/>
+          <text x="152" y="171" font-size="8" fill="var(--mu)">저성과 3채널 58.2%</text>
+          <rect x="14" y="175" width="8" height="8" fill="rgba(91,142,240,.55)" rx="1"/>
+          <text x="26" y="183" font-size="8" fill="var(--mu)">meta 16.0%</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">예산 재배분 시나리오 — ROAS 10.98 → 12.83 (+16.8%)</div>
+        <div class="cc-desc">현재·10% 이동·20% 이동 3개 시나리오 ROAS 비교 바 차트.</div>
+        <svg viewBox="0 0 240 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <!-- max ROAS 12.83, scale: 13→130px. baseline y=140 -->
+          <line x1="30" y1="10" x2="30" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="30" y1="140" x2="220" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- current: 10.98 → h=110 y=30 -->
+          <rect x="45"  y="30"  width="45" height="110" fill="rgba(150,135,120,.5)" rx="4"/>
+          <text x="67"  y="25"  text-anchor="middle" font-size="12" fill="var(--dk)" font-weight="700">10.98</text>
+          <text x="67"  y="155" text-anchor="middle" font-size="9" fill="var(--mu)">현재</text>
+          <!-- +10%: 11.91 → h=119 y=21 -->
+          <rect x="105" y="21"  width="45" height="119" fill="rgba(91,142,240,.6)" rx="4"/>
+          <text x="127" y="16"  text-anchor="middle" font-size="12" fill="#3b5bbf" font-weight="700">11.91</text>
+          <text x="127" y="155" text-anchor="middle" font-size="9" fill="var(--mu)">+10%</text>
+          <text x="127" y="168" text-anchor="middle" font-size="8" fill="#218d72">+8.4%</text>
+          <!-- +20%: 12.83 → h=128 y=12 -->
+          <rect x="165" y="12"  width="45" height="128" fill="rgba(53,201,149,.75)" rx="4"/>
+          <text x="187" y="10"  text-anchor="middle" font-size="12" fill="#218d72" font-weight="700">12.83</text>
+          <text x="187" y="155" text-anchor="middle" font-size="9" fill="var(--mu)">+20%</text>
+          <text x="187" y="168" text-anchor="middle" font-size="8" fill="#218d72" font-weight="700">+16.8%</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 3</span><span class="dash-step-hdr-label">시뮬레이션 — 예산 재배분 시 ROAS 변화</span></div>
+    <div class="sim-widget">
+      <div class="sim-title">예산 이동 시뮬레이터 <span class="sim-badge">인터랙티브</span></div>
+      <div class="sim-note">저성과 채널 예산을 naver 계열로 이동하는 비율을 슬라이더로 조정합니다. 기준 ROAS: 10.98</div>
+      <div class="sim-slider-row">
+        <div class="sim-slider-label">
+          <span class="sim-label">naver 계열로 이동 비율 (0~30%)</span>
+          <span class="sim-range-val" id="sim-a-val">0%</span>
+        </div>
+        <input type="range" class="sim-range" id="sim-a" min="0" max="30" step="5" value="0"
+          oninput="updateSimA(this)"
+          style="background: linear-gradient(to right, #4fb799 0%, rgba(96,79,67,.15) 0%)">
+      </div>
+      <div class="sim-results">
+        <div class="sim-res"><div class="sim-res-val" id="sim-a-r1">10.98</div><div class="sim-res-lbl">예상 ROAS</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-a-r2">0%</div><div class="sim-res-lbl">ROAS 변화율</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-a-r3">현재</div><div class="sim-res-lbl">시나리오</div></div>
+      </div>
+    </div>
+    <div class="sim-widget" style="background:rgba(237,231,245,.7);border-color:rgba(91,107,191,.25)">
+      <div class="sim-title">예산 재배분 시나리오 비교
+        <span class="sim-badge" style="background:rgba(91,107,191,.12);color:#3b5bbf;border-color:rgba(91,107,191,.2)">3가지 시나리오</span>
+      </div>
+      <div class="sim-note">현재 구조 / naver 10% 이동 / naver 20% 이동 — 각 시나리오 ROAS를 비교합니다.</div>
+      <div class="sim-scenario-row">
+        <div class="sim-scenario-btn active" onclick="selectScenario(this,'sc-a')">
+          <div>현재 유지</div><div style="font-size:10px;color:var(--mu);font-weight:400;margin-top:3px">ROAS 10.98</div>
+        </div>
+        <div class="sim-scenario-btn" onclick="selectScenario(this,'sc-b')">
+          <div>10% 이동</div><div style="font-size:10px;color:var(--mu);font-weight:400;margin-top:3px">ROAS 11.91</div>
+        </div>
+        <div class="sim-scenario-btn" onclick="selectScenario(this,'sc-c')">
+          <div>20% 이동</div><div style="font-size:10px;color:var(--mu);font-weight:400;margin-top:3px">ROAS 12.83</div>
+        </div>
+      </div>
+      <div class="sim-results">
+        <div class="sim-res"><div class="sim-res-val" id="sc-r1">10.98</div><div class="sim-res-lbl">예상 ROAS</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sc-r2">기준</div><div class="sim-res-lbl">ROAS 개선율</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sc-r3">낮음</div><div class="sim-res-lbl">실행 난이도</div></div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">ACTION</span><span class="dash-step-hdr-label">즉각 실행 가능한 개선 과제</span></div>
+    <div class="dash-actions">
+      <div class="da-item">
+        <div class="da-p">P1 — 즉시</div>
+        <div class="da-title">하위 ROAS 채널 예산 20% → naver 계열 이동</div>
+        <div class="da-why">ROAS +16.8% (10.98→12.83) 기대. google·kakao·youtube 각 6~7% 예산 축소, naver·naver_search 증액. 실행 난이도 낮음.</div>
+      </div>
+      <div class="da-item">
+        <div class="da-p">P3 — 모니터링</div>
+        <div class="da-title">meta 채널 투자 증대 검토 (ROAS 11.25, 현재 저평가)</div>
+        <div class="da-why">meta ROAS가 전체 평균(10.98) 상회. 현재 16.04% 예산은 성과 대비 낮은 편. 증액 후 ROAS 추이 2주 모니터링.</div>
+      </div>
+      <div class="da-item">
+        <div class="da-p">P4 — 지속</div>
+        <div class="da-title">월별 채널 ROAS 대시보드 주간 리뷰</div>
+        <div class="da-why">채널 ROAS가 전체 평균 대비 20% 이상 벗어나면 즉시 예산 재조정. 주 1회 KPI 리뷰 루틴 확립.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div><!-- /panel-0 -->
+
+
+<!-- ══════════════════════════════════════════  PANEL 1 — Analysis B ════════════════════════════════════════════ -->
+<div class="dash-panel" id="panel-1">
+<div class="dash">
+  <div class="dash-topbar">
+    <div class="dash-topbar-left">
+      <div class="dash-topbar-title">타깃 유형 성과 역전 — <em>Target Type · ROAS · Retargeting</em></div>
+      <div class="dash-topbar-problem">문제: retargeting ROAS(10.44)가 UA(10.91)·lookalike(11.22)보다 낮음 — 모수 고갈·피로도·제외 목록 미비가 원인으로 추정</div>
+    </div>
+    <span class="dash-topbar-meta">ad_performance.csv · 2025.1–12 · 12개월</span>
+  </div>
+  <div class="dash-body">
+    <div class="story-block">
+      <div class="story-flow">
+        <div class="sf-cell"><div class="sf-label lbl-now">현황</div><div class="sf-val">retargeting ROAS 10.44</div><div class="sf-desc">lookalike 11.22 · UA 10.91<br>retargeting이 <span class="num-red">가장 낮음</span></div></div>
+        <div class="sf-cell"><div class="sf-label lbl-why">원인</div><div class="sf-val">모수 고갈</div><div class="sf-desc">제외 목록 미비·광고 피로도<br>기존 구매자에 <strong>반복 노출</strong></div></div>
+        <div class="sf-cell"><div class="sf-label lbl-so">결과</div><div class="sf-val">ROAS −0.78</div><div class="sf-desc">lookalike 대비 <span class="num-red">−7.0% 손실</span><br>모든 채널에서 동일 패턴</div></div>
+        <div class="sf-cell"><div class="sf-label lbl-act">기회</div><div class="sf-val">ROAS +0.78</div><div class="sf-desc">제외 목록 최신화 + 모수 확장<br>4~6주 내 효과 확인 가능</div></div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 1</span><span class="dash-step-hdr-label">현황 파악</span></div>
+    <div class="dash-kpi-row">
+      <div class="dk-box" style="border-color:rgba(239,125,134,.3)"><div class="dk-lbl">retargeting ROAS</div><div class="dk-val">10.44</div><div class="dk-delta dn">타입 중 최하위</div></div>
+      <div class="dk-box"><div class="dk-lbl">UA ROAS</div><div class="dk-val">10.91</div><div class="dk-delta warn">평균 수준</div></div>
+      <div class="dk-box" style="border-color:rgba(53,201,149,.3)"><div class="dk-lbl">lookalike ROAS</div><div class="dk-val">11.22</div><div class="dk-delta up">타입 중 최고</div></div>
+      <div class="dk-box"><div class="dk-lbl">retargeting 열위 폭</div><div class="dk-val">−0.78</div><div class="dk-delta dn">vs lookalike 대비</div></div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 2</span><span class="dash-step-hdr-label">원인 확인</span></div>
+
+    <!-- 차트 행 1: 3열 -->
+    <div class="dash-charts three-eq">
+      <div class="chart-card">
+        <div class="cc-title">타깃 유형별 ROAS — lookalike > UA > retargeting</div>
+        <div class="cc-desc">3가지 타깃 유형 ROAS 수평 바. retargeting이 모든 채널에서 가장 낮은 구조적 문제.</div>
+        <svg viewBox="0 0 300 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="80" y1="10" x2="80" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- lookalike: 11.22 → w=200 -->
+          <rect x="82" y="28" width="200" height="30" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="285" y="48" font-size="11" fill="#218d72" font-weight="700">11.22</text>
+          <text x="75" y="48" text-anchor="end" font-size="11" fill="var(--mu)">lookalike</text>
+          <!-- UA: 10.91 → w=194 -->
+          <rect x="82" y="70" width="194" height="30" fill="rgba(91,142,240,.6)" rx="4"/>
+          <text x="279" y="90" font-size="11" fill="#3b5bbf" font-weight="700">10.91</text>
+          <text x="75" y="90" text-anchor="end" font-size="11" fill="var(--mu)">UA</text>
+          <!-- retargeting: 10.44 → w=186 -->
+          <rect x="82" y="112" width="186" height="30" fill="rgba(239,125,134,.65)" rx="4"/>
+          <text x="271" y="132" font-size="11" fill="#9b2d38" font-weight="700">10.44</text>
+          <text x="75" y="132" text-anchor="end" font-size="11" fill="var(--mu)">retargeting</text>
+          <text x="175" y="131" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">최저 −0.78</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">타깃 유형별 지출 비중 — lookalike 50%로 최대</div>
+        <div class="cc-desc">lookalike 569억(50%), UA 380억(33%), retargeting 192억(17%). 성과 대비 배분 적절한가?</div>
+        <svg viewBox="0 0 300 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="80" y1="10" x2="80" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- total: 569+380+192=1141. scale: 1141→200px -->
+          <!-- lookalike: 569 → w=100 (50%) -->
+          <rect x="82" y="28" width="100" height="30" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="185" y="48" font-size="11" fill="#218d72" font-weight="700">569억 (49.9%)</text>
+          <text x="75" y="48" text-anchor="end" font-size="11" fill="var(--mu)">lookalike</text>
+          <!-- UA: 380 → w=66 (33.3%) -->
+          <rect x="82" y="70" width="66" height="30" fill="rgba(91,142,240,.6)" rx="4"/>
+          <text x="151" y="90" font-size="11" fill="#3b5bbf" font-weight="700">380억 (33.3%)</text>
+          <text x="75" y="90" text-anchor="end" font-size="11" fill="var(--mu)">UA</text>
+          <!-- retargeting: 192 → w=34 (16.8%) -->
+          <rect x="82" y="112" width="34" height="30" fill="rgba(239,125,134,.6)" rx="4"/>
+          <text x="119" y="132" font-size="11" fill="#9b2d38" font-weight="700">192억 (16.8%)</text>
+          <text x="75" y="132" text-anchor="end" font-size="11" fill="var(--mu)">retargeting</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">타깃 유형별 CPA — retargeting이 가장 비싸다</div>
+        <div class="cc-desc">lookalike 12,493원 vs retargeting 13,286원. 전환 1건당 793원 더 비쌈.</div>
+        <svg viewBox="0 0 300 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="80" y1="10" x2="80" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- max 13286 → w=200. scale 200/13286=0.01505 -->
+          <!-- lookalike: 12493 → w=188 -->
+          <rect x="82" y="28" width="188" height="30" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="273" y="48" font-size="11" fill="#218d72" font-weight="700">12,493원</text>
+          <text x="75" y="48" text-anchor="end" font-size="11" fill="var(--mu)">lookalike</text>
+          <!-- UA: 12975 → w=195 -->
+          <rect x="82" y="70" width="195" height="30" fill="rgba(91,142,240,.6)" rx="4"/>
+          <text x="280" y="90" font-size="11" fill="#3b5bbf" font-weight="700">12,975원</text>
+          <text x="75" y="90" text-anchor="end" font-size="11" fill="var(--mu)">UA</text>
+          <!-- retargeting: 13286 → w=200 -->
+          <rect x="82" y="112" width="200" height="30" fill="rgba(239,125,134,.65)" rx="4"/>
+          <text x="285" y="132" font-size="11" fill="#9b2d38" font-weight="700">13,286원</text>
+          <text x="75" y="132" text-anchor="end" font-size="11" fill="var(--mu)">retargeting</text>
+          <text x="155" y="131" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">최고 +793원</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 2: 2열 -->
+    <div class="dash-charts">
+      <div class="chart-card">
+        <div class="cc-title">채널 × 타깃 ROAS 히트맵 — retargeting 열위가 전 채널 일관</div>
+        <div class="cc-desc">6채널 × 3타깃 교차표. naver 계열에서 retargeting 열위(−1.4)가 가장 크다.</div>
+        <table class="pp-tbl">
+          <thead>
+            <tr><th>채널</th><th>UA</th><th>lookalike</th><th>retargeting</th><th>열위(LK-RT)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>naver</td><td>18.08</td><td>18.19</td><td>16.80</td><td><span class="tag-warn">−1.39</span></td></tr>
+            <tr><td>naver_search</td><td>17.56</td><td>18.16</td><td>16.72</td><td><span class="tag-warn">−1.44</span></td></tr>
+            <tr><td>meta</td><td>11.13</td><td>11.38</td><td>11.07</td><td><span class="tag-ok">−0.31</span></td></tr>
+            <tr><td>google</td><td>7.66</td><td>8.23</td><td>7.60</td><td><span class="tag-ok">−0.63</span></td></tr>
+            <tr><td>kakao</td><td>7.85</td><td>8.23</td><td>7.56</td><td><span class="tag-warn">−0.67</span></td></tr>
+            <tr><td>youtube</td><td>7.56</td><td>7.94</td><td>7.56</td><td><span class="tag-ok">−0.38</span></td></tr>
+          </tbody>
+        </table>
+        <div class="highlight-box warn"><strong>핵심:</strong> naver 계열에서 retargeting 열위 −1.4 이상 — 고성과 채널에서 모수 고갈 집중 발생.</div>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">채널 × 타깃 Grouped 바 — UA·lookalike·retargeting 채널별 비교</div>
+        <div class="cc-desc">채널별로 3개 타깃 유형을 묶어 ROAS 비교. 모든 채널에서 lookalike > UA > retargeting.</div>
+        <svg viewBox="0 0 560 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <!-- ROAS scale: max 18.19, 18→height 140px, 1=7.78px. baseline y=158 -->
+          <line x1="40" y1="10" x2="40" y2="158" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="158" x2="540" y2="158" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- naver: UA18.08→h=141, LK18.19→h=142, RT16.80→h=131 -->
+          <rect x="50"  y="17"  width="16" height="141" fill="rgba(91,142,240,.6)"  rx="2"/>
+          <rect x="68"  y="16"  width="16" height="142" fill="rgba(53,201,149,.75)" rx="2"/>
+          <rect x="86"  y="27"  width="16" height="131" fill="rgba(239,125,134,.6)" rx="2"/>
+          <text x="78" y="172" text-anchor="middle" font-size="8" fill="var(--mu)">naver</text>
+          <!-- naver_search: UA17.56→137, LK18.16→141, RT16.72→130 -->
+          <rect x="138" y="21"  width="16" height="137" fill="rgba(91,142,240,.6)"  rx="2"/>
+          <rect x="156" y="17"  width="16" height="141" fill="rgba(53,201,149,.75)" rx="2"/>
+          <rect x="174" y="28"  width="16" height="130" fill="rgba(239,125,134,.6)" rx="2"/>
+          <text x="165" y="172" text-anchor="middle" font-size="8" fill="var(--mu)">n_srch</text>
+          <!-- meta: UA11.13→87, LK11.38→89, RT11.07→86 -->
+          <rect x="226" y="71"  width="16" height="87" fill="rgba(91,142,240,.6)"  rx="2"/>
+          <rect x="244" y="69"  width="16" height="89" fill="rgba(53,201,149,.65)" rx="2"/>
+          <rect x="262" y="72"  width="16" height="86" fill="rgba(239,125,134,.6)" rx="2"/>
+          <text x="252" y="172" text-anchor="middle" font-size="8" fill="var(--mu)">meta</text>
+          <!-- google: UA7.66→60, LK8.23→64, RT7.60→59 -->
+          <rect x="314" y="98"  width="16" height="60" fill="rgba(91,142,240,.6)"  rx="2"/>
+          <rect x="332" y="94"  width="16" height="64" fill="rgba(53,201,149,.65)" rx="2"/>
+          <rect x="350" y="99"  width="16" height="59" fill="rgba(239,125,134,.6)" rx="2"/>
+          <text x="340" y="172" text-anchor="middle" font-size="8" fill="var(--mu)">google</text>
+          <!-- kakao: UA7.85→61, LK8.23→64, RT7.56→59 -->
+          <rect x="400" y="97"  width="16" height="61" fill="rgba(91,142,240,.6)"  rx="2"/>
+          <rect x="418" y="94"  width="16" height="64" fill="rgba(53,201,149,.65)" rx="2"/>
+          <rect x="436" y="99"  width="16" height="59" fill="rgba(239,125,134,.6)" rx="2"/>
+          <text x="426" y="172" text-anchor="middle" font-size="8" fill="var(--mu)">kakao</text>
+          <!-- youtube: UA7.56→59, LK7.94→62, RT7.56→59 -->
+          <rect x="486" y="99"  width="16" height="59" fill="rgba(91,142,240,.6)"  rx="2"/>
+          <rect x="504" y="96"  width="16" height="62" fill="rgba(53,201,149,.65)" rx="2"/>
+          <rect x="522" y="99"  width="16" height="59" fill="rgba(239,125,134,.6)" rx="2"/>
+          <text x="512" y="172" text-anchor="middle" font-size="8" fill="var(--mu)">youtube</text>
+          <!-- legend -->
+          <rect x="40" y="182" width="8" height="5" fill="rgba(91,142,240,.6)" rx="1"/><text x="51" y="187" font-size="8" fill="var(--mu)">UA</text>
+          <rect x="85" y="182" width="8" height="5" fill="rgba(53,201,149,.75)" rx="1"/><text x="96" y="187" font-size="8" fill="var(--mu)">lookalike</text>
+          <rect x="160" y="182" width="8" height="5" fill="rgba(239,125,134,.6)" rx="1"/><text x="171" y="187" font-size="8" fill="var(--mu)">retargeting</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 3: 2열 -->
+    <div class="dash-charts">
+      <div class="chart-card">
+        <div class="cc-title">retargeting 열위 폭 (lookalike−retargeting) — naver 계열이 최대</div>
+        <div class="cc-desc">채널별 lookalike ROAS에서 retargeting ROAS를 뺀 차이. 클수록 모수 고갈 심각.</div>
+        <svg viewBox="0 0 300 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="72" y1="10" x2="72" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- max gap: 1.44 → w=200 -->
+          <!-- naver_search: 18.16-16.72=1.44 → w=200 -->
+          <rect x="74" y="18" width="200" height="22" fill="rgba(239,125,134,.7)" rx="4"/>
+          <text x="277" y="34" font-size="10" fill="#9b2d38" font-weight="700">−1.44</text>
+          <text x="67" y="34" text-anchor="end" font-size="10" fill="var(--mu)">n_srch</text>
+          <!-- naver: 1.39 → w=193 -->
+          <rect x="74" y="48" width="193" height="22" fill="rgba(239,125,134,.65)" rx="4"/>
+          <text x="270" y="64" font-size="10" fill="#9b2d38" font-weight="700">−1.39</text>
+          <text x="67" y="64" text-anchor="end" font-size="10" fill="var(--mu)">naver</text>
+          <!-- kakao: 0.67 → w=93 -->
+          <rect x="74" y="78" width="93" height="22" fill="rgba(239,176,93,.6)" rx="4"/>
+          <text x="170" y="94" font-size="10" fill="#a0620a" font-weight="700">−0.67</text>
+          <text x="67" y="94" text-anchor="end" font-size="10" fill="var(--mu)">kakao</text>
+          <!-- google: 0.63 → w=87 -->
+          <rect x="74" y="108" width="87" height="22" fill="rgba(239,176,93,.5)" rx="4"/>
+          <text x="164" y="124" font-size="10" fill="#a0620a" font-weight="700">−0.63</text>
+          <text x="67" y="124" text-anchor="end" font-size="10" fill="var(--mu)">google</text>
+          <!-- youtube: 0.38 → w=53 -->
+          <rect x="74" y="138" width="53" height="22" fill="rgba(53,201,149,.4)" rx="4"/>
+          <text x="130" y="154" font-size="10" fill="#218d72" font-weight="700">−0.38</text>
+          <text x="67" y="154" text-anchor="end" font-size="10" fill="var(--mu)">youtube</text>
+          <text x="72" y="175" font-size="8" fill="var(--mu)">열위 폭 클수록 모수 고갈 심각 →</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">채널별 ROAS 맥락 — 타깃 분석의 핵심 배경</div>
+        <div class="cc-desc">타깃 유형 분석과 함께 이해해야 할 채널 ROAS 기준치. naver 계열 고성과가 타깃 최적화 효과를 더 크게 만든다.</div>
+        <svg viewBox="0 0 300 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="72" y1="10" x2="72" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- ROAS bars horizontal. max 17.92 → w=200 -->
+          <rect x="74" y="18" width="200" height="22" fill="rgba(53,201,149,.75)" rx="4"/>
+          <text x="277" y="34" font-size="10" fill="#218d72" font-weight="700">17.92</text>
+          <text x="67" y="34" text-anchor="end" font-size="10" fill="var(--mu)">naver</text>
+          <rect x="74" y="48" width="198" height="22" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="275" y="64" font-size="10" fill="#218d72" font-weight="700">17.72</text>
+          <text x="67" y="64" text-anchor="end" font-size="10" fill="var(--mu)">n_srch</text>
+          <rect x="74" y="78" width="125" height="22" fill="rgba(91,142,240,.55)" rx="4"/>
+          <text x="202" y="94" font-size="10" fill="#3b5bbf" font-weight="700">11.25</text>
+          <text x="67" y="94" text-anchor="end" font-size="10" fill="var(--mu)">meta</text>
+          <rect x="74" y="108" width="89" height="22" fill="rgba(239,125,134,.55)" rx="4"/>
+          <text x="166" y="124" font-size="10" fill="#9b2d38" font-weight="700">7.99</text>
+          <text x="67" y="124" text-anchor="end" font-size="10" fill="var(--mu)">kakao</text>
+          <rect x="74" y="138" width="88" height="22" fill="rgba(239,125,134,.5)" rx="4"/>
+          <text x="165" y="154" font-size="10" fill="#9b2d38" font-weight="700">7.93</text>
+          <text x="67" y="154" text-anchor="end" font-size="10" fill="var(--mu)">google</text>
+          <text x="72" y="175" font-size="8" fill="var(--mu)">채널 ROAS (타입 무관 전체 평균)</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 3</span><span class="dash-step-hdr-label">시뮬레이션</span></div>
+    <div class="sim-widget">
+      <div class="sim-title">retargeting 개선 시뮬레이터 <span class="sim-badge">인터랙티브</span></div>
+      <div class="sim-note">retargeting ROAS 목표치와 lookalike 비중을 조정하면 전체 ROAS 개선 효과를 실시간 추정합니다.<br>기준: retargeting 현재 10.44 / lookalike 11.22 / 전체 지출 1,141억원</div>
+      <div class="sim-slider-group">
+        <div class="sim-slider-row">
+          <div class="sim-slider-label">
+            <span class="sim-label">retargeting ROAS 목표 (10.44 → 11.22)</span>
+            <span class="sim-range-val" id="sim-b1-val">10.44</span>
+          </div>
+          <input type="range" class="sim-range" id="sim-b1" min="1044" max="1122" step="4" value="1044"
+            oninput="updateSimB()"
+            style="background:linear-gradient(to right,#4fb799 0%,rgba(96,79,67,.15) 0%)">
+        </div>
+        <div class="sim-slider-row">
+          <div class="sim-slider-label">
+            <span class="sim-label">lookalike 비중 확대 (+0~+15%p)</span>
+            <span class="sim-range-val" id="sim-b2-val">+0%p</span>
+          </div>
+          <input type="range" class="sim-range" id="sim-b2" min="0" max="15" step="1" value="0"
+            oninput="updateSimB()"
+            style="background:linear-gradient(to right,#4fb799 0%,rgba(96,79,67,.15) 0%)">
+        </div>
+      </div>
+      <div class="sim-results">
+        <div class="sim-res"><div class="sim-res-val" id="sim-b-r1">10.98</div><div class="sim-res-lbl">예상 전체 ROAS</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-b-r2">+0.00</div><div class="sim-res-lbl">ROAS 개선분</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-b-r3">0%</div><div class="sim-res-lbl">ROAS 개선율</div></div>
+      </div>
+    </div>
+    <div class="sim-widget" style="background:rgba(237,231,245,.7);border-color:rgba(91,107,191,.25)">
+      <div class="sim-title">채널별 retargeting 우선순위 선택 <span class="sim-badge" style="background:rgba(91,107,191,.12);color:#3b5bbf;border-color:rgba(91,107,191,.2)">전략 선택</span></div>
+      <div class="sim-note">개선 집중 채널을 선택하면 해당 채널의 retargeting ROAS 회복 시 전체 효과를 표시합니다.</div>
+      <div class="sim-scenario-row">
+        <div class="sim-scenario-btn active" onclick="selectScenario(this,'br-a')">naver 계열 집중<br><span style="font-size:10px;font-weight:400;color:var(--mu)">열위 −1.4 최대</span></div>
+        <div class="sim-scenario-btn" onclick="selectScenario(this,'br-b')">전 채널 균등<br><span style="font-size:10px;font-weight:400;color:var(--mu)">열위 −0.78 평균</span></div>
+        <div class="sim-scenario-btn" onclick="selectScenario(this,'br-c')">kakao+google<br><span style="font-size:10px;font-weight:400;color:var(--mu)">열위 −0.65 중간</span></div>
+      </div>
+      <div class="sim-results">
+        <div class="sim-res"><div class="sim-res-val" id="br-r1">11.06</div><div class="sim-res-lbl">회복 시 ROAS</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="br-r2">+0.08</div><div class="sim-res-lbl">전체 ROAS 개선</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="br-r3">4~6주</div><div class="sim-res-lbl">효과 확인 기간</div></div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">ACTION</span><span class="dash-step-hdr-label">즉각 실행 가능한 개선 과제</span></div>
+    <div class="dash-actions">
+      <div class="da-item"><div class="da-p">P2 — 2~4주</div><div class="da-title">retargeting 모수 감사 및 제외 목록 최신화</div><div class="da-why">naver 계열 retargeting ROAS −1.4 열위. 제외 목록 최신화로 ROAS +0.78 가능. 구매 완료·장기 이탈 고객 제외 처리 우선.</div></div>
+      <div class="da-item"><div class="da-p">P3 — 모니터링</div><div class="da-title">lookalike 타깃 비중 확대 테스트</div><div class="da-why">lookalike ROAS(11.22)가 모든 타입 중 최고. 채널별 lookalike 비중을 현재 대비 10~15% 확대하고 2주 후 ROAS 비교.</div></div>
+      <div class="da-item"><div class="da-p">P4 — 지속</div><div class="da-title">타입별 ROAS 주간 모니터링 — 기준값: retargeting 10.8</div><div class="da-why">retargeting ROAS가 10.8 미만 유지 시 즉시 모수 재검토. 주 1회 타입별 성과 비교 루틴 확립.</div></div>
+    </div>
+
+  </div>
+</div>
+</div><!-- /panel-1 -->
+
+
+<!-- ══════════════════════════════════════════  PANEL 2 — Analysis C ════════════════════════════════════════════ -->
+<div class="dash-panel" id="panel-2">
+<div class="dash">
+  <div class="dash-topbar">
+    <div class="dash-topbar-left">
+      <div class="dash-topbar-title">볼륨이 전환을 만들지 않는다 — <em>CVR vs 노출 · 채널별 퍼널 분석</em></div>
+      <div class="dash-topbar-problem">문제: CVR 3.25% 전체 평균이지만 채널별 CVR은 3.19~3.30%로 균일 — ROAS 2.3배 격차는 채널 단가·예산 구조가 원인</div>
+    </div>
+    <span class="dash-topbar-meta">ad_performance.csv · 2025.1–12 · 12개월</span>
+  </div>
+  <div class="dash-body">
+    <div class="story-block">
+      <div class="story-flow">
+        <div class="sf-cell"><div class="sf-label lbl-now">현황</div><div class="sf-val">CVR 3.25%</div><div class="sf-desc">CTR 4.78% · CPA 12,779원<br>ROAS <span class="num-grn">10.98 양호</span></div></div>
+        <div class="sf-cell"><div class="sf-label lbl-why">원인</div><div class="sf-val">볼륨-전환 역비례</div><div class="sf-desc">고볼륨 채널(google·youtube)<br>예산 많지만 <strong>ROAS 최하위</strong></div></div>
+        <div class="sf-cell"><div class="sf-label lbl-so">결과</div><div class="sf-val">CPA 상승 위험</div><div class="sf-desc">볼륨 증가 시 <span class="num-red">CPA 악화</span><br>전환 품질 저하 구조</div></div>
+        <div class="sf-cell"><div class="sf-label lbl-act">기회</div><div class="sf-val">예산 재배분</div><div class="sf-desc">naver 계열로 이동 시<br>CPA 절감 + ROAS +16.8%</div></div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 1</span><span class="dash-step-hdr-label">현황 파악</span></div>
+    <div class="dash-kpi-row">
+      <div class="dk-box"><div class="dk-lbl">CVR (전환율)</div><div class="dk-val">3.25%</div><div class="dk-delta warn">채널간 편차 0.11%p로 균일</div></div>
+      <div class="dk-box" style="border-color:rgba(53,201,149,.3)"><div class="dk-lbl">CTR (클릭률, meta 기준)</div><div class="dk-val">4.78%</div><div class="dk-delta up">유일한 실측 CTR</div></div>
+      <div class="dk-box" style="border-color:rgba(239,125,134,.3)"><div class="dk-lbl">최고 CPA (youtube)</div><div class="dk-val">15,116원</div><div class="dk-delta dn">최저(naver)보다 54% 비쌈</div></div>
+      <div class="dk-box"><div class="dk-lbl">ROAS (MMP)</div><div class="dk-val">10.98</div><div class="dk-delta up">전체 평균 양호</div></div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 2</span><span class="dash-step-hdr-label">원인 확인</span></div>
+
+    <!-- 차트 행 1: 3열 -->
+    <div class="dash-charts three-eq">
+      <div class="chart-card">
+        <div class="cc-title">채널별 CVR — 3.19~3.30%, 전 채널 균일</div>
+        <div class="cc-desc">CVR 채널 간 편차 0.11%p. ROAS 격차(2.3배)의 원인은 CVR이 아닌 예산 배분 구조.</div>
+        <svg viewBox="0 0 300 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="40" y1="10" x2="40" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="140" x2="275" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="20" x2="275" y2="20" stroke="rgba(96,79,67,.07)" stroke-dasharray="3,3" stroke-width="1"/>
+          <text x="35" y="23" text-anchor="end" font-size="7" fill="var(--mu)">3.4%</text>
+          <line x1="40" y1="80" x2="275" y2="80" stroke="rgba(96,79,67,.07)" stroke-dasharray="3,3" stroke-width="1"/>
+          <text x="35" y="83" text-anchor="end" font-size="7" fill="var(--mu)">3.2%</text>
+          <!-- naver: 3.27 → h=81 y=59 -->
+          <rect x="50"  y="59"  width="25" height="81" fill="rgba(53,201,149,.75)" rx="3"/>
+          <text x="62"  y="54"  text-anchor="middle" font-size="9" fill="#218d72" font-weight="700">3.27%</text>
+          <!-- naver_search: 3.19 → h=57 y=83 -->
+          <rect x="83"  y="83"  width="25" height="57" fill="rgba(53,201,149,.6)" rx="3"/>
+          <text x="95"  y="78"  text-anchor="middle" font-size="9" fill="#218d72" font-weight="700">3.19%</text>
+          <!-- meta: 3.27 -->
+          <rect x="116" y="59"  width="25" height="81" fill="rgba(91,142,240,.6)" rx="3"/>
+          <text x="128" y="54"  text-anchor="middle" font-size="9" fill="#3b5bbf" font-weight="700">3.27%</text>
+          <!-- kakao: 3.30 → h=90 y=50 -->
+          <rect x="149" y="50"  width="25" height="90" fill="rgba(239,125,134,.6)" rx="3"/>
+          <text x="161" y="45"  text-anchor="middle" font-size="9" fill="#9b2d38" font-weight="700">3.30%</text>
+          <!-- google: 3.25 → h=75 y=65 -->
+          <rect x="182" y="65"  width="25" height="75" fill="rgba(239,125,134,.5)" rx="3"/>
+          <text x="194" y="60"  text-anchor="middle" font-size="9" fill="#9b2d38" font-weight="700">3.25%</text>
+          <!-- youtube: 3.19 → h=57 y=83 -->
+          <rect x="215" y="83"  width="25" height="57" fill="rgba(239,125,134,.4)" rx="3"/>
+          <text x="227" y="78"  text-anchor="middle" font-size="9" fill="#9b2d38" font-weight="700">3.19%</text>
+          <text x="62"  y="154" text-anchor="middle" font-size="8" fill="var(--mu)">naver</text>
+          <text x="95"  y="154" text-anchor="middle" font-size="8" fill="var(--mu)">n_srch</text>
+          <text x="128" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">meta</text>
+          <text x="161" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">kakao</text>
+          <text x="194" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">google</text>
+          <text x="227" y="154" text-anchor="middle" font-size="8" fill="var(--mu)">youtube</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">퍼널 차트 — 노출→클릭(CTR 4.78%)→전환(CVR 3.25%)</div>
+        <div class="cc-desc">전체 퍼널 구조. 볼륨(노출)을 늘려도 CVR은 고정 — 전환 품질은 채널 배분에 의존.</div>
+        <svg viewBox="0 0 300 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <rect x="30"  y="15"  width="240" height="30" fill="rgba(53,201,149,.4)" rx="4"/>
+          <text x="150" y="35" text-anchor="middle" font-size="12" fill="#218d72" font-weight="700">노출 100% (impressions)</text>
+          <polygon points="30,45 270,45 252,72 48,72" fill="rgba(53,201,149,.25)"/>
+          <text x="150" y="62" text-anchor="middle" font-size="9" fill="#218d72">CTR 4.78% ↓</text>
+          <rect x="48"  y="72"  width="204" height="30" fill="rgba(91,142,240,.45)" rx="4"/>
+          <text x="150" y="92" text-anchor="middle" font-size="12" fill="#3b5bbf" font-weight="700">클릭 CTR 4.78%</text>
+          <polygon points="48,102 252,102 232,130 68,130" fill="rgba(91,142,240,.25)"/>
+          <text x="150" y="119" text-anchor="middle" font-size="9" fill="#9b2d38">CVR 3.25% ↓</text>
+          <rect x="68"  y="130" width="164" height="30" fill="rgba(239,125,134,.55)" rx="4"/>
+          <text x="150" y="150" text-anchor="middle" font-size="12" fill="#9b2d38" font-weight="700">전환 CVR 3.25%</text>
+          <text x="150" y="172" text-anchor="middle" font-size="9" fill="var(--mu)">볼륨 증가로 CVR이 희석되지 않음 — 채널 배분이 핵심</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">채널별 CPA — naver 9,790원 vs youtube 15,116원 (54% 차이)</div>
+        <div class="cc-desc">CPA는 CVR이 아닌 ROAS·단가 차이로 결정됨. naver 계열이 압도적으로 효율 높음.</div>
+        <svg viewBox="0 0 280 185" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="72" y1="10" x2="72" y2="140" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- max 15116 → w=190 -->
+          <!-- naver: 9790 → w=123 -->
+          <rect x="74" y="14"  width="123" height="20" fill="rgba(53,201,149,.75)" rx="4"/>
+          <text x="200" y="28" font-size="10" fill="#218d72" font-weight="700">9,790원</text>
+          <text x="67" y="28"  text-anchor="end" font-size="10" fill="var(--mu)">naver</text>
+          <!-- naver_search: 10052 → w=126 -->
+          <rect x="74" y="40"  width="126" height="20" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="203" y="54" font-size="10" fill="#218d72" font-weight="700">10,052원</text>
+          <text x="67" y="54"  text-anchor="end" font-size="10" fill="var(--mu)">n_srch</text>
+          <!-- meta: 12318 → w=155 -->
+          <rect x="74" y="66"  width="155" height="20" fill="rgba(91,142,240,.55)" rx="4"/>
+          <text x="232" y="80" font-size="10" fill="#3b5bbf" font-weight="700">12,318원</text>
+          <text x="67" y="80"  text-anchor="end" font-size="10" fill="var(--mu)">meta</text>
+          <!-- kakao: 14575 → w=183 -->
+          <rect x="74" y="92"  width="183" height="20" fill="rgba(239,125,134,.55)" rx="4"/>
+          <text x="260" y="106" font-size="10" fill="#9b2d38" font-weight="700">14,575원</text>
+          <text x="67" y="106" text-anchor="end" font-size="10" fill="var(--mu)">kakao</text>
+          <!-- google: 14780 → w=186 -->
+          <rect x="74" y="118" width="186" height="20" fill="rgba(239,125,134,.65)" rx="4"/>
+          <text x="263" y="132" font-size="10" fill="#9b2d38" font-weight="700">14,780원</text>
+          <text x="67" y="132" text-anchor="end" font-size="10" fill="var(--mu)">google</text>
+          <!-- youtube: 15116 → w=190 -->
+          <rect x="74" y="144" width="190" height="20" fill="rgba(239,125,134,.75)" rx="4"/>
+          <text x="267" y="158" font-size="10" fill="#9b2d38" font-weight="700">15,116원</text>
+          <text x="67" y="158" text-anchor="end" font-size="10" fill="var(--mu)">youtube</text>
+          <text x="72" y="175" font-size="8" fill="var(--mu)">낮을수록 효율 높음 →</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 2: 2열 -->
+    <div class="dash-charts">
+      <div class="chart-card">
+        <div class="cc-title">채널별 CVR vs ROAS 비교표 — CVR 균일, ROAS는 2.3배 격차</div>
+        <div class="cc-desc">CVR이 같아도 ROAS가 다른 이유: 전환 단가(AOV)·채널 단가 차이. ROAS 격차는 볼륨 구조 문제.</div>
+        <table class="pp-tbl">
+          <thead>
+            <tr><th>채널</th><th>CVR</th><th>ROAS</th><th>CPA(원)</th><th>예산비중</th><th>판정</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>naver</td><td>3.27%</td><td>17.92</td><td>9,790</td><td>12.84%</td><td><span class="tag-ok">최적</span></td></tr>
+            <tr><td>naver_search</td><td>3.19%</td><td>17.72</td><td>10,052</td><td>12.89%</td><td><span class="tag-ok">최적</span></td></tr>
+            <tr><td>meta</td><td>3.27%</td><td>11.25</td><td>12,318</td><td>16.04%</td><td><span class="tag-warn">보통</span></td></tr>
+            <tr><td>kakao</td><td>3.30%</td><td>7.99</td><td>14,575</td><td>19.38%</td><td><span class="tag-bad">과배분</span></td></tr>
+            <tr><td>google</td><td>3.25%</td><td>7.93</td><td>14,780</td><td>19.46%</td><td><span class="tag-bad">과배분</span></td></tr>
+            <tr><td>youtube</td><td>3.19%</td><td>7.75</td><td>15,116</td><td>19.40%</td><td><span class="tag-bad">과배분</span></td></tr>
+          </tbody>
+        </table>
+        <div class="highlight-box warn"><strong>핵심:</strong> CVR은 3.19~3.30%로 균일. ROAS 격차는 채널 단가·AOV 차이에서 발생. 볼륨 증가 자체가 전환율을 희석시키지 않음.</div>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">채널 × 타깃 CVR — 타입별 CVR 차이 없음 (모두 3.27%)</div>
+        <div class="cc-desc">UA·lookalike·retargeting 모두 CVR 3.27%. 타깃 유형이 전환율에 영향을 미치지 않는 구조.</div>
+        <svg viewBox="0 0 300 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <!-- All bars same height: CVR 3.27% → horizontal grouped bars, 3 types per channel group -->
+          <line x1="40" y1="10" x2="40" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="155" x2="275" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- All 3 target types, all channels = 3.27%, displayed as 3 horizontal rows -->
+          <rect x="42" y="25" width="200" height="22" fill="rgba(53,201,149,.5)" rx="3"/>
+          <text x="245" y="41" font-size="10" fill="#218d72" font-weight="700">3.27%</text>
+          <text x="37" y="41" text-anchor="end" font-size="10" fill="var(--mu)">lookalike</text>
+          <rect x="42" y="57" width="200" height="22" fill="rgba(91,142,240,.5)" rx="3"/>
+          <text x="245" y="73" font-size="10" fill="#3b5bbf" font-weight="700">3.27%</text>
+          <text x="37" y="73" text-anchor="end" font-size="10" fill="var(--mu)">UA</text>
+          <rect x="42" y="89" width="200" height="22" fill="rgba(239,125,134,.5)" rx="3"/>
+          <text x="245" y="105" font-size="10" fill="#9b2d38" font-weight="700">3.27%</text>
+          <text x="37" y="105" text-anchor="end" font-size="10" fill="var(--mu)">retargeting</text>
+          <text x="155" y="132" text-anchor="middle" font-size="10" fill="var(--mu)">3가지 타입 모두 CVR 동일</text>
+          <text x="155" y="148" text-anchor="middle" font-size="11" fill="#218d72" font-weight="700">타입이 CVR을 결정하지 않음</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 3: 2열 -->
+    <div class="dash-charts">
+      <div class="chart-card">
+        <div class="cc-title">채널별 ROAS vs CPA — 역비례 산점도 (ROAS↑ = CPA↓)</div>
+        <div class="cc-desc">ROAS와 CPA는 완벽한 역비례. naver 계열(우하단)이 최적, youtube(좌상단)가 최악.</div>
+        <svg viewBox="0 0 320 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <!-- x축: CPA 9000~16000, range 7000. x=40~290 → 250px. 1원=0.0357px -->
+          <!-- y축: ROAS 7~19, range 12. y=155→10 → 145px. 1unit=145/12=12.08px -->
+          <line x1="40" y1="10" x2="40" y2="155" stroke="rgba(96,79,67,.2)" stroke-width="1"/>
+          <line x1="40" y1="155" x2="295" y2="155" stroke="rgba(96,79,67,.2)" stroke-width="1"/>
+          <!-- y축 눈금 -->
+          <text x="35" y="158" text-anchor="end" font-size="8" fill="var(--mu)">7</text>
+          <text x="35" y="95"  text-anchor="end" font-size="8" fill="var(--mu)">12</text>
+          <text x="35" y="13"  text-anchor="end" font-size="8" fill="var(--mu)">19</text>
+          <line x1="38" y1="95" x2="295" y2="95" stroke="rgba(96,79,67,.07)" stroke-width="1"/>
+          <!-- x축 눈금 -->
+          <text x="40"  y="168" text-anchor="middle" font-size="8" fill="var(--mu)">9K</text>
+          <text x="147" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">12K</text>
+          <text x="290" y="168" text-anchor="middle" font-size="8" fill="var(--mu)">16K원</text>
+          <!-- naver: y=155-(10.92*12.08)=23 -->
+          <circle cx="68"  cy="23"  r="10" fill="rgba(53,201,149,.75)"/>
+          <text x="68"   y="20"  text-anchor="middle" font-size="7" fill="#fff" font-weight="700">naver</text>
+          <text x="68"   y="29"  text-anchor="middle" font-size="6" fill="#fff">17.92</text>
+          <!-- naver_search: y=25 -->
+          <circle cx="79"  cy="25"  r="10" fill="rgba(53,201,149,.65)"/>
+          <text x="79"   y="22"  text-anchor="middle" font-size="7" fill="#fff" font-weight="700">n_srch</text>
+          <text x="79"   y="31"  text-anchor="middle" font-size="6" fill="#fff">17.72</text>
+          <!-- meta: y=155-(4.25*12.08)=104 -->
+          <circle cx="158" cy="104" r="10" fill="rgba(91,142,240,.7)"/>
+          <text x="158"  y="101" text-anchor="middle" font-size="7" fill="#fff" font-weight="700">meta</text>
+          <text x="158"  y="110" text-anchor="middle" font-size="6" fill="#fff">11.25</text>
+          <!-- kakao: y=155-(0.99*12.08)=143 -->
+          <circle cx="239" cy="143" r="10" fill="rgba(239,125,134,.75)"/>
+          <text x="239"  y="134" text-anchor="middle" font-size="7" fill="#9b2d38" font-weight="700">kakao</text>
+          <text x="239"  y="142" text-anchor="middle" font-size="6" fill="#fff">7.99</text>
+          <!-- google: y=144 -->
+          <circle cx="252" cy="144" r="10" fill="rgba(239,125,134,.6)"/>
+          <text x="252"  y="135" text-anchor="middle" font-size="7" fill="#9b2d38" font-weight="700">google</text>
+          <text x="252"  y="143" text-anchor="middle" font-size="6" fill="#fff">7.93</text>
+          <!-- youtube: y=145 -->
+          <circle cx="265" cy="145" r="10" fill="rgba(239,125,134,.45)"/>
+          <text x="265"  y="136" text-anchor="middle" font-size="7" fill="#9b2d38" font-weight="700">youtube</text>
+          <text x="265"  y="144" text-anchor="middle" font-size="6" fill="#9b2d38">7.75</text>
+          <!-- 축 레이블 -->
+          <text x="40"  y="183" font-size="8" fill="var(--mu)">← CPA 낮음 (효율 높음)</text>
+          <text x="200" y="183" font-size="8" fill="var(--mu)">CPA 높음 (비효율) →</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">심층: 채널별 ROAS와 예산비중 역전 구조 — 핵심 문제 재현</div>
+        <div class="cc-desc">고ROAS 채널(naver 계열)이 저예산, 저ROAS 채널(google·kakao·youtube)이 고예산. 볼륨이 전환을 만들지 않는 구조적 원인.</div>
+        <svg viewBox="0 0 320 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="30" y1="10" x2="30" y2="160" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="30" y1="160" x2="305" y2="160" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- Dual bars: budget(blue) vs ROAS(green). ROAS scale: 20→130px. Budget scale: 20%→130px. -->
+          <!-- naver: budget 12.84%→83px, ROAS 17.92→116px -->
+          <rect x="38"  y="77"  width="20" height="83" fill="rgba(91,142,240,.65)" rx="3"/>
+          <text x="48"  y="73"  text-anchor="middle" font-size="8" fill="#3b5bbf">12.8%</text>
+          <rect x="60"  y="44"  width="20" height="116" fill="rgba(53,201,149,.7)" rx="3"/>
+          <text x="70"  y="40"  text-anchor="middle" font-size="8" fill="#218d72" font-weight="700">17.9</text>
+          <!-- meta: budget 16.04%→104px, ROAS 11.25→73px -->
+          <rect x="98"  y="56"  width="20" height="104" fill="rgba(91,142,240,.55)" rx="3"/>
+          <text x="108" y="52"  text-anchor="middle" font-size="8" fill="#3b5bbf">16.0%</text>
+          <rect x="120" y="87"  width="20" height="73" fill="rgba(91,142,240,.4)" rx="3"/>
+          <text x="130" y="83"  text-anchor="middle" font-size="8" fill="#3b5bbf" font-weight="700">11.3</text>
+          <!-- google: budget 19.46%→126px, ROAS 7.93→51px -->
+          <rect x="158" y="34"  width="20" height="126" fill="rgba(239,125,134,.7)" rx="3"/>
+          <text x="168" y="30"  text-anchor="middle" font-size="8" fill="#9b2d38">19.5%</text>
+          <rect x="180" y="109" width="20" height="51" fill="rgba(239,125,134,.4)" rx="3"/>
+          <text x="190" y="105" text-anchor="middle" font-size="8" fill="#9b2d38" font-weight="700">7.9</text>
+          <!-- kakao: budget 19.38%→126px, ROAS 7.99→52px -->
+          <rect x="218" y="34"  width="20" height="126" fill="rgba(239,125,134,.65)" rx="3"/>
+          <text x="228" y="30"  text-anchor="middle" font-size="8" fill="#9b2d38">19.4%</text>
+          <rect x="240" y="108" width="20" height="52" fill="rgba(239,125,134,.35)" rx="3"/>
+          <text x="250" y="104" text-anchor="middle" font-size="8" fill="#9b2d38" font-weight="700">8.0</text>
+          <!-- youtube: budget 19.40%→126px, ROAS 7.75→50px -->
+          <rect x="278" y="34"  width="20" height="126" fill="rgba(239,125,134,.6)" rx="3"/>
+          <text x="288" y="30"  text-anchor="middle" font-size="8" fill="#9b2d38">19.4%</text>
+          <rect x="278" y="110" width="20" height="50" fill="rgba(239,125,134,.3)" rx="3"/>
+          <text x="288" y="106" text-anchor="middle" font-size="8" fill="#9b2d38" font-weight="700">7.8</text>
+          <!-- x labels -->
+          <text x="59"  y="174" text-anchor="middle" font-size="8" fill="var(--mu)">naver</text>
+          <text x="119" y="174" text-anchor="middle" font-size="8" fill="var(--mu)">meta</text>
+          <text x="179" y="174" text-anchor="middle" font-size="8" fill="var(--mu)">google</text>
+          <text x="239" y="174" text-anchor="middle" font-size="8" fill="var(--mu)">kakao</text>
+          <text x="288" y="174" text-anchor="middle" font-size="8" fill="var(--mu)">youtube</text>
+          <rect x="30" y="184" width="7" height="6" fill="rgba(91,142,240,.65)" rx="1"/><text x="40" y="190" font-size="8" fill="var(--mu)">예산비중(↑=더 많음)</text>
+          <rect x="155" y="184" width="7" height="6" fill="rgba(53,201,149,.7)" rx="1"/><text x="165" y="190" font-size="8" fill="var(--mu)">ROAS(↑=성과 높음)</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 3</span><span class="dash-step-hdr-label">시뮬레이션</span></div>
+    <div class="sim-widget">
+      <div class="sim-title">CVR × 예산 이중 시뮬레이터 <span class="sim-badge">인터랙티브</span></div>
+      <div class="sim-note">CVR 개선과 예산 이동을 동시에 조정하여 CPA·ROAS 복합 효과를 추정합니다.<br>기준: CVR 3.25% / CPA 12,779원 / ROAS 10.98</div>
+      <div class="sim-slider-group">
+        <div class="sim-slider-row">
+          <div class="sim-slider-label">
+            <span class="sim-label">CVR 개선 목표 (+0~+2%p, 현재 3.25%)</span>
+            <span class="sim-range-val" id="sim-c1-val">+0.0%p</span>
+          </div>
+          <input type="range" class="sim-range" id="sim-c1" min="0" max="20" step="1" value="0"
+            oninput="updateSimC()"
+            style="background:linear-gradient(to right,#4fb799 0%,rgba(96,79,67,.15) 0%)">
+        </div>
+        <div class="sim-slider-row">
+          <div class="sim-slider-label">
+            <span class="sim-label">고CPA 채널 예산 이동 (naver 계열로, 0~20%)</span>
+            <span class="sim-range-val" id="sim-c2-val">0%</span>
+          </div>
+          <input type="range" class="sim-range" id="sim-c2" min="0" max="20" step="1" value="0"
+            oninput="updateSimC()"
+            style="background:linear-gradient(to right,#4fb799 0%,rgba(96,79,67,.15) 0%)">
+        </div>
+      </div>
+      <div class="sim-results" style="grid-template-columns:repeat(4,1fr)">
+        <div class="sim-res"><div class="sim-res-val" id="sim-c-r1">3.25%</div><div class="sim-res-lbl">목표 CVR</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-c-r2">12,779원</div><div class="sim-res-lbl">예상 CPA</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-c-r3">10.98</div><div class="sim-res-lbl">예상 ROAS</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-c-r4">0%</div><div class="sim-res-lbl">ROAS 개선율</div></div>
+      </div>
+    </div>
+    <div class="sim-widget" style="background:rgba(237,231,245,.7);border-color:rgba(91,107,191,.25)">
+      <div class="sim-title">CPA 목표 역산 시뮬레이터 <span class="sim-badge" style="background:rgba(91,107,191,.12);color:#3b5bbf;border-color:rgba(91,107,191,.2)">목표 설정</span></div>
+      <div class="sim-note">목표 CPA를 입력하면 달성에 필요한 CVR과 예산 구조 조건을 추정합니다.</div>
+      <div class="sim-slider-row">
+        <div class="sim-slider-label">
+          <span class="sim-label">목표 CPA (9,000~13,000원)</span>
+          <span class="sim-range-val" id="sim-c3-val">12,779원</span>
+        </div>
+        <input type="range" class="sim-range" id="sim-c3" min="9000" max="13000" step="100" value="12779"
+          oninput="updateSimCTarget(this)"
+          style="background:linear-gradient(to right,#4fb799 100%,rgba(96,79,67,.15) 100%)">
+      </div>
+      <div class="sim-results">
+        <div class="sim-res"><div class="sim-res-val" id="sim-c3-r1">3.25%</div><div class="sim-res-lbl">필요 CVR</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-c3-r2">0%p</div><div class="sim-res-lbl">CVR 개선 필요</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-c3-r3">현재 달성</div><div class="sim-res-lbl">예산 조정 여부</div></div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">ACTION</span><span class="dash-step-hdr-label">즉각 실행 가능한 개선 과제</span></div>
+    <div class="dash-actions">
+      <div class="da-item"><div class="da-p">P1 — 즉시</div><div class="da-title">고CPA 채널(google·youtube) 예산 naver 계열로 이동</div><div class="da-why">youtube CPA 15,116원 vs naver 9,790원. 볼륨 확보보다 단가 효율이 핵심. 예산 20% 이동으로 CPA 즉시 개선.</div></div>
+      <div class="da-item"><div class="da-p">P2 — 2~4주</div><div class="da-title">랜딩페이지 A/B 테스트로 전환금액(ARPU) 개선</div><div class="da-why">CVR은 채널 무관 균일(3.19~3.30%). CPA 개선의 레버는 AOV(객단가) 상승. CTA·상품 배열·가격 표시 A/B 테스트.</div></div>
+      <div class="da-item"><div class="da-p">P3 — 모니터링</div><div class="da-title">채널별 CVR 주간 추적 — 기준값: 3.25%</div><div class="da-why">특정 채널 CVR이 2주 연속 0.5%p 이상 하락 시 랜딩·타깃 점검. 주 1회 퍼널 리뷰 루틴.</div></div>
+    </div>
+
+  </div>
+</div>
+</div><!-- /panel-2 -->
+
+
+<!-- ══════════════════════════════════════════  PANEL 3 — Analysis D ════════════════════════════════════════════ -->
+<div class="dash-panel" id="panel-3">
+<div class="dash">
+  <div class="dash-topbar">
+    <div class="dash-topbar-left">
+      <div class="dash-topbar-title">예산 재배분 시뮬레이션 — <em>Budget Reallocation · ROAS Scenario</em></div>
+      <div class="dash-topbar-problem">문제: 현재 ROAS 10.98 — naver 계열로 예산 이동 시 ROAS +8.4~16.8% 개선 가능, 최적 시나리오 도출 필요</div>
+    </div>
+    <span class="dash-topbar-meta">ad_performance.csv · 2025.1–12 · 12개월</span>
+  </div>
+  <div class="dash-body">
+    <div class="story-block">
+      <div class="story-flow">
+        <div class="sf-cell"><div class="sf-label lbl-now">현황</div><div class="sf-val">ROAS 10.98</div><div class="sf-desc">저성과 3채널이 예산 58%<br>고성과 naver 계열 25.7%만</div></div>
+        <div class="sf-cell"><div class="sf-label lbl-why">레버</div><div class="sf-val">예산 이동 %</div><div class="sf-desc">10% 이동 → ROAS 11.91<br>20% 이동 → ROAS 12.83</div></div>
+        <div class="sf-cell"><div class="sf-label lbl-so">기대 효과</div><div class="sf-val">ROAS +16.8%</div><div class="sf-desc">20% 이동 시 <span class="num-grn">최대 개선</span><br>추가 투자 없이 달성</div></div>
+        <div class="sf-cell"><div class="sf-label lbl-act">실행 난이도</div><div class="sf-val">낮음</div><div class="sf-desc">캠페인 예산 조정만으로 실행<br>1~2주 내 적용 가능</div></div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 1</span><span class="dash-step-hdr-label">시나리오 KPI</span></div>
+    <div class="dash-kpi-row">
+      <div class="dk-box"><div class="dk-lbl">현재 ROAS</div><div class="dk-val">10.98</div><div class="dk-delta warn">역배분 구조</div></div>
+      <div class="dk-box"><div class="dk-lbl">10% 이동 시 ROAS</div><div class="dk-val">11.91</div><div class="dk-delta up">+8.4%</div></div>
+      <div class="dk-box" style="border-color:rgba(53,201,149,.3)"><div class="dk-lbl">20% 이동 시 ROAS</div><div class="dk-val">12.83</div><div class="dk-delta up">+16.8% 최대 개선</div></div>
+      <div class="dk-box"><div class="dk-lbl">실행 난이도</div><div class="dk-val">낮음</div><div class="dk-delta up">예산 조정만으로 실행</div></div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 2</span><span class="dash-step-hdr-label">시나리오 분석</span></div>
+
+    <!-- 차트 행 1: ROAS 시나리오 (full-width) -->
+    <div class="dash-charts full">
+      <div class="chart-card">
+        <div class="cc-title">예산 재배분 시나리오 — 현재·10%·20% 이동 시 ROAS 비교</div>
+        <div class="cc-desc">naver 계열로 예산을 이동할수록 전체 ROAS가 선형 개선. 20% 이동 시 +16.8% 달성.</div>
+        <svg viewBox="0 0 580 220" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="40" y1="10" x2="40" y2="178" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="178" x2="540" y2="178" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- y 눈금: ROAS 9~14 range 5 → 168px. 1unit=33.6px. baseline y=178 -->
+          <text x="35" y="181" text-anchor="end" font-size="9" fill="var(--mu)">9</text>
+          <text x="35" y="148" text-anchor="end" font-size="9" fill="var(--mu)">10</text>
+          <text x="35" y="114" text-anchor="end" font-size="9" fill="var(--mu)">11</text>
+          <text x="35" y="81"  text-anchor="end" font-size="9" fill="var(--mu)">12</text>
+          <text x="35" y="47"  text-anchor="end" font-size="9" fill="var(--mu)">13</text>
+          <line x1="40" y1="148" x2="540" y2="148" stroke="rgba(96,79,67,.06)" stroke-width="1"/>
+          <line x1="40" y1="114" x2="540" y2="114" stroke="rgba(96,79,67,.06)" stroke-width="1"/>
+          <line x1="40" y1="81"  x2="540" y2="81"  stroke="rgba(96,79,67,.06)" stroke-width="1"/>
+          <!-- 현재 avg 기준선: 10.98 → y=178-(1.98*33.6)=111 -->
+          <line x1="40" y1="111" x2="540" y2="111" stroke="rgba(239,176,93,.45)" stroke-dasharray="4,3" stroke-width="1.5"/>
+          <text x="545" y="114" font-size="8" fill="#a0620a">현재 avg</text>
+          <!-- 현재: 10.98 → h=(1.98*33.6)=67 y=111 -->
+          <rect x="90"  y="111" width="120" height="67" fill="rgba(150,135,120,.5)" rx="6"/>
+          <text x="150" y="104" text-anchor="middle" font-size="22" fill="var(--dk)" font-weight="700">10.98</text>
+          <text x="150" y="195" text-anchor="middle" font-size="11" fill="var(--mu)">현재</text>
+          <!-- +10%: 11.91 → h=(2.91*33.6)=98 y=80 -->
+          <rect x="230" y="80"  width="120" height="98" fill="rgba(91,142,240,.6)" rx="6"/>
+          <text x="290" y="73"  text-anchor="middle" font-size="22" fill="#3b5bbf" font-weight="700">11.91</text>
+          <text x="290" y="195" text-anchor="middle" font-size="11" fill="var(--mu)">+10% 이동</text>
+          <text x="290" y="208" text-anchor="middle" font-size="10" fill="#218d72" font-weight="700">+8.4%</text>
+          <!-- +20%: 12.83 → h=(3.83*33.6)=129 y=49 -->
+          <rect x="370" y="49"  width="120" height="129" fill="rgba(53,201,149,.75)" rx="6"/>
+          <text x="430" y="42"  text-anchor="middle" font-size="22" fill="#218d72" font-weight="700">12.83</text>
+          <text x="430" y="195" text-anchor="middle" font-size="11" fill="var(--mu)">+20% 이동</text>
+          <text x="430" y="208" text-anchor="middle" font-size="10" fill="#218d72" font-weight="700">+16.8%</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 2: 예산 비중 Before/After + ROAS 맥락 (2열) -->
+    <div class="dash-charts">
+      <div class="chart-card">
+        <div class="cc-title">채널 예산 비중 Before → After (20% 이동 시나리오)</div>
+        <div class="cc-desc">naver 계열: 25.7% → 45.7% (+20%p), 저성과 3채널: 58.2% → 38.2% (−20%p), meta 유지.</div>
+        <svg viewBox="0 0 400 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="40" y1="10" x2="40" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="155" x2="375" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- y: 0~65%, 145px. 1%=2.23px. -->
+          <text x="35" y="158" text-anchor="end" font-size="8" fill="var(--mu)">0%</text>
+          <text x="35" y="102" text-anchor="end" font-size="8" fill="var(--mu)">25%</text>
+          <text x="35" y="43"  text-anchor="end" font-size="8" fill="var(--mu)">50%</text>
+          <line x1="40" y1="102" x2="375" y2="102" stroke="rgba(96,79,67,.06)" stroke-width="1"/>
+          <!-- naver계열 before: 25.7% → h=57 y=98 -->
+          <rect x="60"  y="98"  width="42" height="57" fill="rgba(53,201,149,.35)" rx="3"/>
+          <text x="81"  y="94"  text-anchor="middle" font-size="9" fill="var(--mu)">25.7%</text>
+          <text x="81"  y="170" text-anchor="middle" font-size="8" fill="var(--mu)">이전</text>
+          <!-- naver계열 after: 45.7% → h=102 y=53 -->
+          <rect x="106" y="53"  width="42" height="102" fill="rgba(53,201,149,.8)" rx="3"/>
+          <text x="127" y="49"  text-anchor="middle" font-size="9" fill="#218d72" font-weight="700">45.7%</text>
+          <text x="127" y="170" text-anchor="middle" font-size="8" fill="#218d72" font-weight="700">이후</text>
+          <text x="94"  y="183" text-anchor="middle" font-size="8" fill="var(--mu)">naver 계열</text>
+          <!-- meta before: 16% → h=36 y=119 -->
+          <rect x="175" y="119" width="42" height="36" fill="rgba(91,142,240,.4)" rx="3"/>
+          <text x="196" y="115" text-anchor="middle" font-size="9" fill="var(--mu)">16.0%</text>
+          <text x="196" y="170" text-anchor="middle" font-size="8" fill="var(--mu)">이전</text>
+          <!-- meta after: 16% 동일 -->
+          <rect x="221" y="119" width="42" height="36" fill="rgba(91,142,240,.65)" rx="3"/>
+          <text x="242" y="115" text-anchor="middle" font-size="9" fill="#3b5bbf">16.0%</text>
+          <text x="242" y="170" text-anchor="middle" font-size="8" fill="#3b5bbf">유지</text>
+          <text x="209" y="183" text-anchor="middle" font-size="8" fill="var(--mu)">meta</text>
+          <!-- 저성과 before: 58.2% → h=130 y=25 -->
+          <rect x="290" y="25"  width="42" height="130" fill="rgba(239,125,134,.55)" rx="3"/>
+          <text x="311" y="21"  text-anchor="middle" font-size="9" fill="var(--mu)">58.2%</text>
+          <text x="311" y="170" text-anchor="middle" font-size="8" fill="var(--mu)">이전</text>
+          <!-- 저성과 after: 38.2% → h=85 y=70 -->
+          <rect x="336" y="70"  width="42" height="85" fill="rgba(239,125,134,.3)" rx="3"/>
+          <text x="357" y="66"  text-anchor="middle" font-size="9" fill="#9b2d38" font-weight="700">38.2%</text>
+          <text x="357" y="170" text-anchor="middle" font-size="8" fill="#9b2d38">이후</text>
+          <text x="323" y="183" text-anchor="middle" font-size="8" fill="var(--mu)">저성과 3채널</text>
+          <!-- 화살표 표시 -->
+          <text x="94"  y="72" text-anchor="middle" font-size="10" fill="#218d72" font-weight="700">↑ +20%p</text>
+          <text x="323" y="82" text-anchor="middle" font-size="10" fill="#9b2d38" font-weight="700">↓ −20%p</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">채널별 ROAS — 재배분 근거 (naver 계열 2.3배 격차)</div>
+        <div class="cc-desc">ROAS 격차가 클수록 예산 이동 효과가 크다. naver(17.92) vs youtube(7.75) = 2.31배.</div>
+        <svg viewBox="0 0 280 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="72" y1="10" x2="72" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- max 17.92 → w=190. scale=190/17.92=10.6px per unit -->
+          <rect x="74" y="12"  width="190" height="22" fill="rgba(53,201,149,.8)"  rx="4"/>
+          <text x="74"  y="10"  font-size="9"  fill="#218d72" font-weight="700">naver</text>
+          <text x="267" y="27"  font-size="10" fill="#218d72" font-weight="700">17.92</text>
+          <rect x="74" y="40"  width="188" height="22" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="74"  y="38"  font-size="9"  fill="#218d72" font-weight="700">n_search</text>
+          <text x="265" y="55"  font-size="10" fill="#218d72" font-weight="700">17.72</text>
+          <rect x="74" y="68"  width="119" height="22" fill="rgba(91,142,240,.6)"  rx="4"/>
+          <text x="74"  y="66"  font-size="9"  fill="#3b5bbf" font-weight="700">meta</text>
+          <text x="196" y="83"  font-size="10" fill="#3b5bbf" font-weight="700">11.25</text>
+          <rect x="74" y="96"  width="84"  height="22" fill="rgba(239,125,134,.65)" rx="4"/>
+          <text x="74"  y="94"  font-size="9"  fill="#9b2d38" font-weight="700">kakao</text>
+          <text x="161" y="111" font-size="10" fill="#9b2d38" font-weight="700">7.99</text>
+          <rect x="74" y="124" width="84"  height="22" fill="rgba(239,125,134,.55)" rx="4"/>
+          <text x="74"  y="122" font-size="9"  fill="#9b2d38" font-weight="700">google</text>
+          <text x="161" y="139" font-size="10" fill="#9b2d38" font-weight="700">7.93</text>
+          <rect x="74" y="152" width="82"  height="22" fill="rgba(239,125,134,.45)" rx="4"/>
+          <text x="74"  y="150" font-size="9"  fill="#9b2d38" font-weight="700">youtube</text>
+          <text x="159" y="167" font-size="10" fill="#9b2d38" font-weight="700">7.75</text>
+          <!-- avg line: 10.98 → x=74+10.98*10.6=190 -->
+          <line x1="190" y1="10" x2="190" y2="178" stroke="rgba(239,176,93,.55)" stroke-dasharray="3,3" stroke-width="1.5"/>
+          <text x="191" y="184" font-size="7" fill="#a0620a">avg 10.98</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 2: 2열 -->
+    <div class="dash-charts">
+      <div class="chart-card">
+        <div class="cc-title">4대 액션 우선순위 매트릭스 — 임팩트 vs 실행 난이도</div>
+        <div class="cc-desc">P1 예산 이동(고임팩트·쉬움)이 최우선. P2 retargeting 개선, P3 meta 확대, P4 랜딩 A/B 순.</div>
+        <svg viewBox="0 0 300 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="150" y1="10" x2="150" y2="178" stroke="rgba(96,79,67,.2)" stroke-width="1" stroke-dasharray="4,3"/>
+          <line x1="30"  y1="95" x2="285" y2="95" stroke="rgba(96,79,67,.2)" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="160" y="20" font-size="8" fill="var(--mu)">↑ 임팩트 高</text>
+          <text x="160" y="185" font-size="8" fill="var(--mu)">↓ 임팩트 低</text>
+          <text x="35"  y="92" font-size="8" fill="var(--mu)">← 실행 어려움</text>
+          <text x="200" y="92" font-size="8" fill="var(--mu)">실행 쉬움 →</text>
+          <!-- P1: 고임팩트·쉬움 → 우상단 -->
+          <circle cx="230" cy="38" r="26" fill="rgba(53,201,149,.2)" stroke="rgba(53,201,149,.6)" stroke-width="2"/>
+          <text x="230" y="35" text-anchor="middle" font-size="9" fill="#218d72" font-weight="700">P1</text>
+          <text x="230" y="46" text-anchor="middle" font-size="7" fill="#218d72">예산 이동</text>
+          <text x="230" y="56" text-anchor="middle" font-size="7" fill="#218d72">+16.8%</text>
+          <!-- P2: 중임팩트·중간 → 좌상단 -->
+          <circle cx="75"  cy="58" r="22" fill="rgba(91,142,240,.2)" stroke="rgba(91,142,240,.6)" stroke-width="1.5"/>
+          <text x="75"  y="55" text-anchor="middle" font-size="9" fill="#3b5bbf" font-weight="700">P2</text>
+          <text x="75"  y="65" text-anchor="middle" font-size="7" fill="#3b5bbf">RTG 개선</text>
+          <!-- P3: 저임팩트·쉬움 → 우하단 -->
+          <circle cx="220" cy="135" r="20" fill="rgba(239,176,93,.2)" stroke="rgba(239,176,93,.6)" stroke-width="1.5"/>
+          <text x="220" y="132" text-anchor="middle" font-size="9" fill="#a0620a" font-weight="700">P3</text>
+          <text x="220" y="142" text-anchor="middle" font-size="7" fill="#a0620a">meta 확대</text>
+          <!-- P4: 고임팩트·어려움 → 좌하단 -->
+          <circle cx="65"  cy="135" r="22" fill="rgba(239,125,134,.2)" stroke="rgba(239,125,134,.6)" stroke-width="1.5"/>
+          <text x="65"  y="132" text-anchor="middle" font-size="9" fill="#9b2d38" font-weight="700">P4</text>
+          <text x="65"  y="142" text-anchor="middle" font-size="7" fill="#9b2d38">랜딩 A/B</text>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="cc-title">타깃 유형 개선 시나리오 — retargeting ROAS 회복 시 효과</div>
+        <div class="cc-desc">retargeting(현 10.44)이 lookalike(11.22) 수준으로 회복되면 전체 ROAS 약 +0.13 기대.</div>
+        <svg viewBox="0 0 300 200" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="40" y1="10" x2="40" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="155" x2="275" y2="155" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- scale ROAS max 11.22→h=130 y=25. 1unit=11.6px. baseline y=155 -->
+          <rect x="55"  y="25"  width="30" height="130" fill="rgba(53,201,149,.65)" rx="3"/>
+          <text x="70"  y="20"  text-anchor="middle" font-size="10" fill="#218d72" font-weight="700">11.22</text>
+          <text x="70"  y="168" text-anchor="middle" font-size="9" fill="var(--mu)">lookalike</text>
+          <!-- UA current: 10.91 → h=(10.91/11.22)*130=126 y=29 -->
+          <rect x="95"  y="29"  width="30" height="126" fill="rgba(91,142,240,.5)" rx="3"/>
+          <text x="110" y="24"  text-anchor="middle" font-size="10" fill="#3b5bbf" font-weight="700">10.91</text>
+          <text x="110" y="168" text-anchor="middle" font-size="9" fill="var(--mu)">UA</text>
+          <!-- retargeting current: 10.44 → h=(10.44/11.22)*130=121 y=34 -->
+          <rect x="145" y="34"  width="30" height="121" fill="rgba(239,125,134,.65)" rx="3"/>
+          <text x="160" y="29"  text-anchor="middle" font-size="10" fill="#9b2d38" font-weight="700">10.44</text>
+          <text x="160" y="168" text-anchor="middle" font-size="9" fill="var(--mu)">RTG 현재</text>
+          <!-- retargeting target (=lookalike): 11.22 → h=130 y=25 -->
+          <rect x="185" y="25"  width="30" height="130" fill="rgba(53,201,149,.45)" rx="3" stroke="rgba(53,201,149,.7)" stroke-width="1.5" stroke-dasharray="4,2"/>
+          <text x="200" y="20"  text-anchor="middle" font-size="10" fill="#218d72" font-weight="700">11.22</text>
+          <text x="200" y="168" text-anchor="middle" font-size="9" fill="var(--mu)">RTG 목표</text>
+          <text x="200" y="181" text-anchor="middle" font-size="8" fill="#218d72">+0.78 개선</text>
+          <!-- arrow -->
+          <line x1="178" y1="90" x2="188" y2="90" stroke="rgba(53,201,149,.7)" stroke-width="2" marker-end="url(#arr)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 차트 행 3: 1열 full -->
+    <div class="dash-charts full">
+      <div class="chart-card">
+        <div class="cc-title">누적 개선 효과 — P1+P2+P3 합산 시나리오</div>
+        <div class="cc-desc">각 액션을 순서대로 실행했을 때 누적 ROAS 개선 경로. P1(예산 이동) 효과가 압도적.</div>
+        <svg viewBox="0 0 620 220" width="100%" height="auto" style="max-height:none;" preserveAspectRatio="xMidYMid meet">
+          <line x1="40" y1="10" x2="40" y2="175" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <line x1="40" y1="175" x2="590" y2="175" stroke="rgba(96,79,67,.15)" stroke-width="1"/>
+          <!-- scale: ROAS 10~13.5, range 3.5, 150px. 1=42.9px. y=175-(v-10)*42.9 -->
+          <!-- baseline: 10.98 → y=175-0.98*42.9=133 -->
+          <!-- P0 (baseline): 10.98 → h=42 y=133 -->
+          <rect x="55"  y="133" width="70" height="42" fill="rgba(150,135,120,.5)" rx="4"/>
+          <text x="90"  y="126" text-anchor="middle" font-size="11" fill="var(--dk)" font-weight="700">10.98</text>
+          <text x="90"  y="192" text-anchor="middle" font-size="9" fill="var(--mu)">현재</text>
+          <!-- P1 (+예산20%이동): 12.83 → h=(2.83*42.9)=121 y=54 -->
+          <rect x="155" y="54"  width="70" height="121" fill="rgba(53,201,149,.7)" rx="4"/>
+          <text x="190" y="47"  text-anchor="middle" font-size="11" fill="#218d72" font-weight="700">12.83</text>
+          <text x="190" y="192" text-anchor="middle" font-size="9" fill="var(--mu)">P1 실행 후</text>
+          <text x="190" y="205" text-anchor="middle" font-size="8" fill="#218d72" font-weight="700">+16.8%</text>
+          <!-- P1+P2 (+RTG개선): 12.96 → h=(2.96*42.9)=127 y=48 -->
+          <rect x="255" y="48"  width="70" height="127" fill="rgba(53,201,149,.65)" rx="4"/>
+          <text x="290" y="41"  text-anchor="middle" font-size="11" fill="#218d72" font-weight="700">12.96</text>
+          <text x="290" y="192" text-anchor="middle" font-size="9" fill="var(--mu)">P1+P2</text>
+          <text x="290" y="205" text-anchor="middle" font-size="8" fill="#218d72">+18.0%</text>
+          <!-- P1+P2+P3 (+meta확대): 13.11 → h=(3.11*42.9)=133 y=42 -->
+          <rect x="355" y="42"  width="70" height="133" fill="rgba(53,201,149,.6)" rx="4"/>
+          <text x="390" y="35"  text-anchor="middle" font-size="11" fill="#218d72" font-weight="700">13.11</text>
+          <text x="390" y="192" text-anchor="middle" font-size="9" fill="var(--mu)">P1+P2+P3</text>
+          <text x="390" y="205" text-anchor="middle" font-size="8" fill="#218d72">+19.4%</text>
+          <!-- target line -->
+          <line x1="40" y1="42" x2="590" y2="42" stroke="rgba(53,201,149,.3)" stroke-dasharray="5,4" stroke-width="1"/>
+          <text x="592" y="45" font-size="8" fill="#218d72">목표</text>
+          <!-- connect bars with arrows -->
+          <line x1="128" y1="90" x2="152" y2="88" stroke="rgba(96,79,67,.2)" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="228" y1="54" x2="252" y2="52" stroke="rgba(96,79,67,.2)" stroke-width="1.5"/>
+          <line x1="328" y1="48" x2="352" y2="46" stroke="rgba(96,79,67,.2)" stroke-width="1.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">STEP 3</span><span class="dash-step-hdr-label">시나리오 선택 시뮬레이터</span></div>
+    <div class="sim-widget">
+      <div class="sim-title">예산 이동 + retargeting 복합 시뮬레이터 <span class="sim-badge">인터랙티브</span></div>
+      <div class="sim-note">두 레버를 동시에 조정하여 최적 ROAS 조합을 찾습니다. 기준 ROAS: 10.98</div>
+      <div class="sim-slider-group">
+        <div class="sim-slider-row">
+          <div class="sim-slider-label">
+            <span class="sim-label">naver 계열 예산 이동 비율 (0~30%)</span>
+            <span class="sim-range-val" id="sim-d1-val">0%</span>
+          </div>
+          <input type="range" class="sim-range" id="sim-d1" min="0" max="30" step="1" value="0"
+            oninput="updateSimD()"
+            style="background:linear-gradient(to right,#4fb799 0%,rgba(96,79,67,.15) 0%)">
+        </div>
+        <div class="sim-slider-row">
+          <div class="sim-slider-label">
+            <span class="sim-label">retargeting ROAS 개선율 (0~100%, lookalike 수준까지)</span>
+            <span class="sim-range-val" id="sim-d2-val">0%</span>
+          </div>
+          <input type="range" class="sim-range" id="sim-d2" min="0" max="100" step="5" value="0"
+            oninput="updateSimD()"
+            style="background:linear-gradient(to right,#4fb799 0%,rgba(96,79,67,.15) 0%)">
+        </div>
+      </div>
+      <div class="sim-results" style="grid-template-columns:repeat(4,1fr)">
+        <div class="sim-res"><div class="sim-res-val" id="sim-d-r1">10.98</div><div class="sim-res-lbl">예상 ROAS</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-d-r2">+0.00</div><div class="sim-res-lbl">ROAS 개선분</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-d-r3">0%</div><div class="sim-res-lbl">ROAS 개선율</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="sim-d-r4">현재 유지</div><div class="sim-res-lbl">시나리오</div></div>
+      </div>
+    </div>
+    <div class="sim-widget" style="background:rgba(225,241,236,.7);border-color:rgba(79,183,153,.3)">
+      <div class="sim-title">3단계 시나리오 비교 <span class="sim-badge" style="background:rgba(53,201,149,.12);color:#1a6b50;border-color:rgba(53,201,149,.25)">전략 선택</span></div>
+      <div class="sim-note">현재 유지 / 10% 이동 / 20% 이동 — 각 시나리오별 ROAS와 실행 조건을 선택하세요.</div>
+      <div class="sim-scenario-row">
+        <div class="sim-scenario-btn active" onclick="selectScenario(this,'dsc-a')">현재 유지<br><span style="font-size:10px;font-weight:400;color:var(--mu)">ROAS 10.98</span></div>
+        <div class="sim-scenario-btn" onclick="selectScenario(this,'dsc-b')">10% 이동<br><span style="font-size:10px;font-weight:400;color:var(--mu)">ROAS 11.91</span></div>
+        <div class="sim-scenario-btn" onclick="selectScenario(this,'dsc-c')">20% 이동<br><span style="font-size:10px;font-weight:400;color:var(--mu)">ROAS 12.83</span></div>
+      </div>
+      <div class="sim-results">
+        <div class="sim-res"><div class="sim-res-val" id="dsc-r1">10.98</div><div class="sim-res-lbl">예상 ROAS</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="dsc-r2">기준</div><div class="sim-res-lbl">ROAS 개선율</div></div>
+        <div class="sim-res"><div class="sim-res-val" id="dsc-r3">낮음</div><div class="sim-res-lbl">실행 난이도</div></div>
+      </div>
+    </div>
+
+    <div class="dash-step-hdr"><span class="dash-step-hdr-num">ACTION</span><span class="dash-step-hdr-label">전체 핵심 액션 요약</span></div>
+    <div class="dash-actions">
+      <div class="da-item"><div class="da-p">P1 — 즉시 / 실행 낮음</div><div class="da-title">하위 ROAS 채널 예산 20% → naver 계열 이동</div><div class="da-why">ROAS +16.8% 기대. 캠페인 예산 조정만으로 1~2주 내 실행 가능. google·kakao·youtube 각 6~7% 감액.</div></div>
+      <div class="da-item"><div class="da-p">P2 — 2~4주 / 실행 중간</div><div class="da-title">retargeting 모수 감사 및 제외 목록 최신화</div><div class="da-why">ROAS +0.78 가능. naver 계열 retargeting 열위(−1.4) 집중 해소. 구매 완료·이탈 고객 제외 처리.</div></div>
+      <div class="da-item"><div class="da-p">P4 — 지속 / 실행 높음</div><div class="da-title">랜딩페이지 A/B 테스트로 CVR·ARPU 개선</div><div class="da-why">CVR 3.25% → 4%p 목표. CTA·상품 배열·가격 표시 변경 테스트. 2주 단위 유의성 검증. 장기 CPA 최적화.</div></div>
+    </div>
+
+  </div>
+</div>
+</div><!-- /panel-3 -->
+
+
+<p class="footnote">AI Data Analysis Pipeline · @dashboard agent output · runs/latest/outputs/06_dashboard.html</p>
+
+
+<script>
+  /* ── 탭 전환 ── */
+  function switchPanel(idx, btn) {
+    document.querySelectorAll('.method-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+    document.querySelectorAll('.dash-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ── 차트 카드 내부 시나리오 탭 ── */
+  function switchSc(btn, id) {
+    const card = btn.closest('.chart-card');
+    card.querySelectorAll('.sc-tab').forEach(b => b.classList.toggle('active', b === btn));
+    card.querySelectorAll('.sc-pane').forEach(p => p.classList.toggle('active', p.id === id));
+  }
+
+  /* ── 슬라이더 fill 업데이트 헬퍼 ── */
+  function updateSliderFill(el) {
+    const min = +el.min || 0, max = +el.max || 100, val = +el.value;
+    const pct = ((val - min) / (max - min)) * 100;
+    el.style.background = `linear-gradient(to right, #4fb799 ${pct}%, rgba(96,79,67,.15) ${pct}%)`;
+  }
+
+  /* ══════════════════════════════════════
+     Panel A — 예산 이동 시뮬레이터
+     ROAS 선형 보간: 0%→10.98, 10%→11.91, 20%→12.83 (기울기=0.0925/%)
+  ══════════════════════════════════════ */
+  function updateSimA(el) {
+    updateSliderFill(el);
+    const pct = +el.value;
+    document.getElementById('sim-a-val').textContent = pct + '%';
+    const roas = +(10.98 + pct * 0.0925).toFixed(2);
+    const chg  = +((roas - 10.98) / 10.98 * 100).toFixed(1);
+    document.getElementById('sim-a-r1').textContent = roas.toFixed(2);
+    document.getElementById('sim-a-r2').textContent = chg > 0 ? '+' + chg + '%' : '0%';
+    document.getElementById('sim-a-r3').textContent =
+      pct === 0 ? '현재' : pct <= 10 ? '보수적' : pct <= 20 ? '권장' : '공격적';
+  }
+
+  /* ══════════════════════════════════════
+     Panel B — retargeting 개선 시뮬레이터
+     모수: retargeting 지출=192.1억, 전체=1141억
+     ROAS 기여 계산: Δroas = (새 rtg ROAS - 10.44) × (192.1/1141) + lookalike 비중 효과
+  ══════════════════════════════════════ */
+  function updateSimB() {
+    const b1 = document.getElementById('sim-b1');
+    const b2 = document.getElementById('sim-b2');
+    updateSliderFill(b1); updateSliderFill(b2);
+    const rtgRoas   = +b1.value / 100;          // 10.44 ~ 11.22
+    const likeShift = +b2.value;                 // 0 ~ 15 %p
+    document.getElementById('sim-b1-val').textContent = rtgRoas.toFixed(2);
+    document.getElementById('sim-b2-val').textContent = '+' + likeShift + '%p';
+    // retargeting ROAS 개선 기여: (rtgRoas - 10.44) × 192.1/1141
+    const rtgContrib  = (rtgRoas - 10.44) * (192.1 / 1141);
+    // lookalike 비중 확대: (11.22 - 10.91) × shift/100 × 전체 지출 비중(569/1141)
+    const likeContrib = 0.31 * (likeShift / 100) * (569 / 1141) * 3;
+    const newRoas = +(10.98 + rtgContrib + likeContrib).toFixed(2);
+    const delta   = +(newRoas - 10.98).toFixed(2);
+    const chgPct  = +((delta / 10.98) * 100).toFixed(1);
+    document.getElementById('sim-b-r1').textContent = newRoas.toFixed(2);
+    document.getElementById('sim-b-r2').textContent = (delta >= 0 ? '+' : '') + delta.toFixed(2);
+    document.getElementById('sim-b-r3').textContent = (chgPct >= 0 ? '+' : '') + chgPct + '%';
+  }
+
+  /* ══════════════════════════════════════
+     Panel C — CVR × 예산 이중 시뮬레이터
+     CPA = spends / conversions. CVR 개선 → conversions ↑ → CPA ↓
+     현재: total_spends = 1141억, total_conv = 1141억/12779원 ≈ 893만건
+     ROAS 개선은 예산 이동 효과만 적용 (CVR은 ROAS와 무관)
+  ══════════════════════════════════════ */
+  function updateSimC() {
+    const c1 = document.getElementById('sim-c1');
+    const c2 = document.getElementById('sim-c2');
+    updateSliderFill(c1); updateSliderFill(c2);
+    const cvrDelta  = +c1.value / 10;   // 0.0 ~ 2.0 %p
+    const budgetPct = +c2.value;        // 0 ~ 20 %
+    document.getElementById('sim-c1-val').textContent = '+' + cvrDelta.toFixed(1) + '%p';
+    document.getElementById('sim-c2-val').textContent = budgetPct + '%';
+    const baseCVR  = 3.25;
+    const newCVR   = baseCVR + cvrDelta;
+    const baseCPA  = 12779;
+    // CPA 개선: CVR 개선 비율만큼 CPA 감소
+    const cpaFromCVR  = baseCPA * (baseCVR / newCVR);
+    // ROAS 개선: 예산 이동
+    const roasFromBudget = 10.98 + budgetPct * 0.0925;
+    const newCPA  = Math.round(cpaFromCVR);
+    const newROAS = +roasFromBudget.toFixed(2);
+    const roasChg = +((newROAS - 10.98) / 10.98 * 100).toFixed(1);
+    document.getElementById('sim-c-r1').textContent = newCVR.toFixed(2) + '%';
+    document.getElementById('sim-c-r2').textContent = newCPA.toLocaleString() + '원';
+    document.getElementById('sim-c-r3').textContent = newROAS.toFixed(2);
+    document.getElementById('sim-c-r4').textContent = (roasChg >= 0 ? '+' : '') + roasChg + '%';
+  }
+
+  /* ══════════════════════════════════════
+     Panel C — CPA 목표 역산
+     목표 CPA 입력 → 필요 CVR 계산
+     CVR_needed = baseCVR × (baseCPA / targetCPA)
+  ══════════════════════════════════════ */
+  function updateSimCTarget(el) {
+    updateSliderFill(el);
+    const targetCPA = +el.value;
+    document.getElementById('sim-c3-val').textContent = targetCPA.toLocaleString() + '원';
+    const baseCVR  = 3.25, baseCPA = 12779;
+    const neededCVR = +(baseCVR * baseCPA / targetCPA).toFixed(2);
+    const delta     = +(neededCVR - baseCVR).toFixed(2);
+    const budgetNote = targetCPA <= 10500 ? '예산 이동 필요' : targetCPA <= 12779 ? '예산 조정 가능' : '현재 달성';
+    document.getElementById('sim-c3-r1').textContent = neededCVR + '%';
+    document.getElementById('sim-c3-r2').textContent = (delta >= 0 ? '+' : '') + delta + '%p';
+    document.getElementById('sim-c3-r3').textContent = budgetNote;
+  }
+
+  /* ══════════════════════════════════════
+     Panel D — 예산 이동 + retargeting 복합
+     두 효과를 합산
+  ══════════════════════════════════════ */
+  function updateSimD() {
+    const d1 = document.getElementById('sim-d1');
+    const d2 = document.getElementById('sim-d2');
+    updateSliderFill(d1); updateSliderFill(d2);
+    const budgetPct = +d1.value;   // 0~30%
+    const rtgImpPct = +d2.value;   // 0~100% (개선 달성률)
+    document.getElementById('sim-d1-val').textContent = budgetPct + '%';
+    document.getElementById('sim-d2-val').textContent = rtgImpPct + '%';
+    // 예산 이동 효과
+    const roasBudget = budgetPct * 0.0925;
+    // retargeting 개선 효과: 100% 달성 시 +0.78, 비례 적용
+    const roasRtg    = 0.78 * (rtgImpPct / 100) * (192.1 / 1141) * 6;
+    const newRoas    = +(10.98 + roasBudget + roasRtg).toFixed(2);
+    const delta      = +(newRoas - 10.98).toFixed(2);
+    const chgPct     = +((delta / 10.98) * 100).toFixed(1);
+    const scenario   = budgetPct === 0 && rtgImpPct === 0 ? '현재 유지'
+                     : budgetPct >= 20 && rtgImpPct >= 80 ? '최적 시나리오'
+                     : budgetPct >= 10 || rtgImpPct >= 50 ? '권장 범위'
+                     : '보수적';
+    document.getElementById('sim-d-r1').textContent = newRoas.toFixed(2);
+    document.getElementById('sim-d-r2').textContent = (delta >= 0 ? '+' : '') + delta.toFixed(2);
+    document.getElementById('sim-d-r3').textContent = (chgPct >= 0 ? '+' : '') + chgPct + '%';
+    document.getElementById('sim-d-r4').textContent = scenario;
+  }
+
+  /* ── 시나리오 버튼 선택 ── */
+  function selectScenario(btn, id) {
+    btn.closest('.sim-widget').querySelectorAll('.sim-scenario-btn').forEach(b => b.classList.toggle('active', b === btn));
+    const scenarios = {
+      'sc-a':  { r1:'10.98', r2:'기준',   r3:'낮음' },
+      'sc-b':  { r1:'11.91', r2:'+8.4%',  r3:'낮음' },
+      'sc-c':  { r1:'12.83', r2:'+16.8%', r3:'낮음' },
+      'br-a':  { r1:'11.06', r2:'+0.08',  r3:'4~6주' },
+      'br-b':  { r1:'11.10', r2:'+0.12',  r3:'6~8주' },
+      'br-c':  { r1:'11.03', r2:'+0.05',  r3:'3~5주' },
+      'dsc-a': { r1:'10.98', r2:'기준',   r3:'낮음' },
+      'dsc-b': { r1:'11.91', r2:'+8.4%',  r3:'낮음' },
+      'dsc-c': { r1:'12.83', r2:'+16.8%', r3:'낮음' }
+    };
+    const s = scenarios[id];
+    if (!s) return;
+    const prefix = id.startsWith('br') ? 'br-' : id.startsWith('dsc') ? 'dsc-' : 'sc-';
+    ['r1','r2','r3'].forEach(k => {
+      const el = document.getElementById(prefix + k);
+      if (el) el.textContent = s[k];
+    });
+  }
+
+  /* ── 모든 슬라이더 초기 fill 적용 ── */
+  document.querySelectorAll('.sim-range').forEach(updateSliderFill);
+</script>
+
+</body>
+</html>
+
+
+</body>
+</html>
