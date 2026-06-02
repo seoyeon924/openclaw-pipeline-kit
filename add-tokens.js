@@ -49,8 +49,9 @@ function askHidden(prompt) {
 
       process.stdin.on('data', onData);
     } else {
-      // Windows CMD 등 rawMode 미지원 환경 — 입력값 보임
-      const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: false });
+      // Windows CMD 등 rawMode 미지원 환경 — PowerShell 사용 권장
+      console.warn('\n⚠ 입력값이 화면에 표시됩니다. 보안을 위해 PowerShell에서 실행해주세요.');
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       rl.once('line', (line) => {
         rl.close();
         resolve(line.trim());
